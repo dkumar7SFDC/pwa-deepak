@@ -1,0 +1,354 @@
+/*
+ * Copyright (c) 2021, salesforce.com, inc.
+ * All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+ */
+import React, {useEffect, useState, useRef} from 'react'
+import {FormattedMessage, useIntl} from 'react-intl'
+import {
+    Alert,
+    AlertIcon,
+    Box,
+    Button,
+    Container,
+    Grid,
+    GridItem,
+    Heading,
+    Stack
+} from '@salesforce/retail-react-app/app/components/shared/ui'
+import useNavigation from '@salesforce/retail-react-app/app/hooks/use-navigation'
+import {
+    CheckoutProvider,
+    useCheckout
+} from '@salesforce/retail-react-app/app/pages/checkout/util/checkout-context'
+import ContactInfo from '@salesforce/retail-react-app/app/pages/checkout/partials/contact-info'
+import PickupAddress from '@salesforce/retail-react-app/app/pages/checkout/partials/pickup-address'
+import SFPaymentsExpress from '@salesforce/retail-react-app/app/components/sf-payments-express'
+import SFPaymentsSheet from '@salesforce/retail-react-app/app/pages/checkout/partials/sf-payments-sheet'
+import ShippingAddress from '@salesforce/retail-react-app/app/pages/checkout/partials/shipping-address'
+import ShippingMethods from '@salesforce/retail-react-app/app/pages/checkout/partials/shipping-methods'
+import Payment from '@salesforce/retail-react-app/app/pages/checkout/partials/payment'
+import OrderSummary from '@salesforce/retail-react-app/app/components/order-summary'
+import {useCurrentCustomer} from '@salesforce/retail-react-app/app/hooks/use-current-customer'
+import {useCurrentBasket} from '@salesforce/retail-react-app/app/hooks/use-current-basket'
+import CheckoutSkeleton from '@salesforce/retail-react-app/app/pages/checkout/partials/checkout-skeleton'
+import {
+    useShopperOrdersMutation,
+    useShopperBasketsV2Mutation as useShopperBasketsMutation
+} from '@salesforce/commerce-sdk-react'
+import UnavailableProductConfirmationModal from '@salesforce/retail-react-app/app/components/unavailable-product-confirmation-modal'
+import {
+    API_ERROR_MESSAGE,
+    TOAST_MESSAGE_REMOVED_ITEM_FROM_CART
+} from '@salesforce/retail-react-app/app/constants'
+import {useToast} from '@salesforce/retail-react-app/app/hooks/use-toast'
+import LoadingSpinner from '@salesforce/retail-react-app/app/components/loading-spinner'
+import {getConfig} from '@salesforce/pwa-kit-runtime/utils/ssr-config'
+import {useMultiship} from '@salesforce/retail-react-app/app/hooks/use-multiship'
+import {
+    useSFPaymentsEnabled,
+    useSFPayments
+} from '@salesforce/retail-react-app/app/hooks/use-sf-payments'
+import {GoogleAPIProvider} from '@salesforce/retail-react-app/app/pages/checkout/util/google-api-provider'
+
+let persistedPaymentsError = null
+
+const Checkout = () => {
+    const {formatMessage} = useIntl()
+    const navigate = useNavigation()
+    const {step} = useCheckout()
+    const [error, setError] = useState()
+    const {data: basket, derivedData} = useCurrentBasket()
+    const {confirmingBasket} = useSFPayments()
+    const [isLoading, setIsLoading] = useState(false)
+    const {mutateAsync: createOrder} = useShopperOrdersMutation('createOrder')
+    const {passwordless = {}, social = {}} = getConfig().app.login || {}
+    const idps = social?.idps
+    const isSocialEnabled = !!social?.enabled
+    const isPasswordlessEnabled = !!passwordless?.enabled
+    const {removeEmptyShipments} = useMultiship(basket)
+    const multishipEnabled = getConfig()?.app?.multishipEnabled ?? true
+    const sfPaymentsEnabled = useSFPaymentsEnabled()
+    const placeOrderCheckoutStep = sfPaymentsEnabled ? 4 : 5
+    const sfPaymentsSheetRef = useRef(null)
+    const [expressPaymentMethodsRendered, setExpressPaymentMethodsRendered] = useState(false)
+    const [shouldHidePlaceOrderButton, setShouldHidePlaceOrderButton] = useState(false)
+
+    // cart has both pickup and delivery orders
+    const isDeliveryAndPickupOrder =
+        multishipEnabled &&
+        derivedData?.totalPickupShipments > 0 &&
+        derivedData?.totalDeliveryShipments > 0
+
+    // Check if there are pickup shipments
+    const hasPickupShipments = derivedData?.totalPickupShipments > 0
+
+    // Only enable BOPIS functionality if the feature toggle is on
+    const isPickupOrderOnly = !isDeliveryAndPickupOrder && hasPickupShipments
+
+    useEffect(() => {
+        if (error || step === 4) {
+            window.scrollTo({top: 0})
+        }
+    }, [error, step])
+
+    // Remove any empty shipments whenever navigating to the checkout page
+    // Using basketId ensures that the basket is in a valid state before removing empty shipments
+    useEffect(() => {
+        if (basket?.shipments?.length > 1) {
+            removeEmptyShipments(basket)
+        }
+    }, [basket?.basketId])
+
+    // Restore error if component remounted after payments error causes a refresh
+    useEffect(() => {
+        if (persistedPaymentsError && !error) {
+            setError(persistedPaymentsError)
+            persistedPaymentsError = null // Clear it after restoring
+        }
+    }, [])
+
+    // Callback to handle when payment method requires its own pay button
+    const handleRequiresPayButtonChange = (requiresPayButton) => {
+        setShouldHidePlaceOrderButton(requiresPayButton === false)
+    }
+
+    const doCreateOrder = async () => {
+        return await createOrder({
+            body: {basketId: basket.basketId}
+        })
+    }
+
+    const handlePaymentError = (errorMessage) => {
+        persistedPaymentsError = errorMessage
+        setError(errorMessage)
+    }
+
+    const submitOrder = async () => {
+        setIsLoading(true)
+        try {
+            let order
+            if (sfPaymentsEnabled) {
+                order = await sfPaymentsSheetRef.current.confirmPayment()
+            } else {
+                order = await doCreateOrder()
+            }
+            navigate(`/checkout/confirmation/${order.orderNo}`)
+        } catch (error) {
+            if (!persistedPaymentsError) {
+                const message = formatMessage({
+                    id: 'checkout.message.generic_error',
+                    defaultMessage: 'An unexpected error occurred during checkout.'
+                })
+                setError(message)
+            }
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    return (
+        <Box background="gray.50" flex="1">
+            <Heading as="h1" fontSize="2xl" mb={6} textAlign="center">
+                <FormattedMessage defaultMessage="Checkout" id="checkout.title.checkout" />
+            </Heading>
+            <Container
+                data-testid="sf-checkout-container"
+                maxWidth="container.xl"
+                py={{base: 7, lg: 16}}
+                px={{base: 0, lg: 8}}
+            >
+                <Grid templateColumns={{base: '1fr', lg: '66% 1fr'}} gap={{base: 10, xl: 20}}>
+                    <GridItem>
+                        <Stack spacing={4}>
+                            {error && (
+                                <Alert status="error" variant="left-accent">
+                                    <AlertIcon />
+                                    {error}
+                                </Alert>
+                            )}
+                            {sfPaymentsEnabled && (
+                                <Box
+                                    layerStyle="card"
+                                    rounded={[0, 0, 'base']}
+                                    px={[4, 4, 6]}
+                                    position="relative"
+                                    display={expressPaymentMethodsRendered ? 'block' : 'none'}
+                                >
+                                    <Heading
+                                        fontSize="lg"
+                                        lineHeight="30px"
+                                        tabIndex="0"
+                                        marginBottom="1rem"
+                                    >
+                                        <FormattedMessage
+                                            defaultMessage="Express Checkout"
+                                            id="checkout.heading.express_checkout"
+                                        />
+                                    </Heading>
+                                    <SFPaymentsExpress
+                                        expressButtonLayout="horizontal"
+                                        maximumButtonCount={3}
+                                        onPaymentMethodsRendered={() =>
+                                            setExpressPaymentMethodsRendered(true)
+                                        }
+                                    />
+                                </Box>
+                            )}
+
+                            <ContactInfo
+                                isSocialEnabled={isSocialEnabled}
+                                isPasswordlessEnabled={isPasswordlessEnabled}
+                                idps={idps}
+                            />
+
+                            {isPickupOrderOnly ? (
+                                <PickupAddress />
+                            ) : (
+                                <>
+                                    {hasPickupShipments && <PickupAddress />}
+                                    <ShippingAddress />
+                                    <ShippingMethods />
+                                </>
+                            )}
+
+                            {sfPaymentsEnabled ? (
+                                <SFPaymentsSheet
+                                    ref={sfPaymentsSheetRef}
+                                    onRequiresPayButtonChange={handleRequiresPayButtonChange}
+                                    onCreateOrder={doCreateOrder}
+                                    onError={handlePaymentError}
+                                />
+                            ) : (
+                                <Payment />
+                            )}
+
+                            {step === placeOrderCheckoutStep && !shouldHidePlaceOrderButton && (
+                                <Box pt={3} display={{base: 'none', lg: 'block'}}>
+                                    <Container variant="form">
+                                        <Button
+                                            w="full"
+                                            onClick={submitOrder}
+                                            isLoading={isLoading}
+                                            data-testid="sf-checkout-place-order-btn"
+                                        >
+                                            <FormattedMessage
+                                                defaultMessage="Place Order"
+                                                id="checkout.button.place_order"
+                                            />
+                                        </Button>
+                                    </Container>
+                                </Box>
+                            )}
+                        </Stack>
+                    </GridItem>
+
+                    <GridItem py={6} px={[4, 4, 4, 0]}>
+                        <OrderSummary
+                            basket={basket}
+                            showTaxEstimationForm={false}
+                            showCartItems={true}
+                        />
+
+                        {step === placeOrderCheckoutStep && !shouldHidePlaceOrderButton && (
+                            <Box display={{base: 'none', lg: 'block'}} pt={2}>
+                                <Button w="full" onClick={submitOrder} isLoading={isLoading}>
+                                    <FormattedMessage
+                                        defaultMessage="Place Order"
+                                        id="checkout.button.place_order"
+                                    />
+                                </Button>
+                            </Box>
+                        )}
+                    </GridItem>
+                </Grid>
+            </Container>
+
+            {step === placeOrderCheckoutStep && !shouldHidePlaceOrderButton && (
+                <Box
+                    display={{lg: 'none'}}
+                    position="sticky"
+                    bottom="0"
+                    px={4}
+                    pt={6}
+                    pb={11}
+                    background="white"
+                    borderTop="1px solid"
+                    borderColor="gray.100"
+                >
+                    <Container variant="form">
+                        <Button w="full" onClick={submitOrder} isLoading={isLoading}>
+                            <FormattedMessage
+                                defaultMessage="Place Order"
+                                id="checkout.button.place_order"
+                            />
+                        </Button>
+                    </Container>
+                </Box>
+            )}
+            {/* Loading overlay during express payment confirmation */}
+            {confirmingBasket && <LoadingSpinner wrapperStyles={{position: 'fixed'}} />}
+        </Box>
+    )
+}
+
+const CheckoutContainer = () => {
+    const {data: customer} = useCurrentCustomer()
+    const {data: basket} = useCurrentBasket()
+    const {formatMessage} = useIntl()
+    const removeItemFromBasketMutation = useShopperBasketsMutation('removeItemFromBasket')
+    const toast = useToast()
+    const [isDeletingUnavailableItem, setIsDeletingUnavailableItem] = useState(false)
+
+    const handleRemoveItem = async (product) => {
+        await removeItemFromBasketMutation.mutateAsync(
+            {
+                parameters: {basketId: basket.basketId, itemId: product.itemId}
+            },
+            {
+                onSuccess: () => {
+                    toast({
+                        title: formatMessage(TOAST_MESSAGE_REMOVED_ITEM_FROM_CART, {quantity: 1}),
+                        status: 'success'
+                    })
+                },
+                onError: () => {
+                    toast({
+                        title: formatMessage(API_ERROR_MESSAGE),
+                        status: 'error'
+                    })
+                }
+            }
+        )
+    }
+    const handleUnavailableProducts = async (unavailableProductIds) => {
+        setIsDeletingUnavailableItem(true)
+        const productItems = basket?.productItems?.filter((item) =>
+            unavailableProductIds?.includes(item.productId)
+        )
+        for (let item of productItems) {
+            await handleRemoveItem(item)
+        }
+        setIsDeletingUnavailableItem(false)
+    }
+
+    if (!customer || !customer.customerId || !basket || !basket.basketId) {
+        return <CheckoutSkeleton />
+    }
+
+    return (
+        <CheckoutProvider>
+            {isDeletingUnavailableItem && <LoadingSpinner wrapperStyles={{position: 'fixed'}} />}
+            <GoogleAPIProvider>
+                <Checkout />
+            </GoogleAPIProvider>
+            <UnavailableProductConfirmationModal
+                productItems={basket?.productItems}
+                handleUnavailableProducts={handleUnavailableProducts}
+            />
+        </CheckoutProvider>
+    )
+}
+
+export default CheckoutContainer

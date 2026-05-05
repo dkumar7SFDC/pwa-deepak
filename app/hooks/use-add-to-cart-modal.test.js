@@ -1,0 +1,1294 @@
+/*
+ * Copyright (c) 2021, salesforce.com, inc.
+ * All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+ */
+import React from 'react'
+import {
+    AddToCartModal,
+    AddToCartModalContext
+} from '@salesforce/retail-react-app/app/hooks/use-add-to-cart-modal'
+import {renderWithProviders} from '@salesforce/retail-react-app/app/utils/test-utils'
+import {screen} from '@testing-library/react'
+import {rest} from 'msw'
+import {mockCustomerBaskets} from '@salesforce/retail-react-app/app/mocks/mock-data'
+import {
+    mockProductBundle,
+    mockBundleItemsAdded,
+    mockBundleWithStandardProducts,
+    mockBundleItemsWithStandardProducts,
+    mockBasketWithStandardProducts
+} from '@salesforce/retail-react-app/app/mocks/product-bundle'
+import {getDisplayVariationValues} from '@salesforce/retail-react-app/app/utils/product-utils'
+import {useCurrentBasket as mockUseCurrentBasket} from '@salesforce/retail-react-app/app/hooks/use-current-basket'
+
+jest.mock('@salesforce/retail-react-app/app/hooks/use-current-basket', () => ({
+    useCurrentBasket: jest.fn()
+}))
+
+jest.mock('@salesforce/commerce-sdk-react', () => ({
+    ...jest.requireActual('@salesforce/commerce-sdk-react'),
+    useCustomerId: jest.fn(() => 'test-customer-id'),
+    useShopperCustomersMutation: jest.fn(() => ({
+        mutateAsync: jest.fn()
+    })),
+    useConfigurations: jest.fn(() => ({
+        data: {
+            configurations: []
+        },
+        isLoading: false,
+        error: null
+    }))
+}))
+
+jest.mock('@salesforce/retail-react-app/app/hooks/use-wish-list', () => ({
+    useWishList: jest.fn(() => ({
+        data: {
+            id: 'test-wishlist-id',
+            customerProductListItems: []
+        }
+    }))
+}))
+
+jest.mock('@salesforce/retail-react-app/app/hooks/use-toast', () => ({
+    useToast: jest.fn(() => jest.fn())
+}))
+
+jest.mock('@salesforce/retail-react-app/app/hooks/use-navigation', () => ({
+    __esModule: true,
+    default: jest.fn(() => jest.fn())
+}))
+
+// Mock useSFPaymentsEnabled as a simple jest function
+const mockUseSFPaymentsEnabled = jest.fn(() => false)
+const mockUseSFPayments = jest.fn(() => ({confirmingBasket: null}))
+
+jest.mock('@salesforce/retail-react-app/app/hooks/use-sf-payments', () => {
+    const actual = jest.requireActual('@salesforce/retail-react-app/app/hooks/use-sf-payments')
+    return {
+        ...actual,
+        useSFPaymentsEnabled: () => mockUseSFPaymentsEnabled(),
+        useSFPayments: () => mockUseSFPayments()
+    }
+})
+
+// Mock SFPaymentsExpress component
+jest.mock('@salesforce/retail-react-app/app/components/sf-payments-express', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const React = require('react')
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const PropTypes = require('prop-types')
+
+    function MockSFPaymentsExpress({
+        expressButtonLayout,
+        maximumButtonCount,
+        onExpressPaymentCompleted
+    }) {
+        return React.createElement(
+            'div',
+            {
+                'data-testid': 'sf-payments-express',
+                'data-button-layout': expressButtonLayout,
+                'data-maximum-button-count': maximumButtonCount,
+                'data-has-completion-callback': !!onExpressPaymentCompleted
+            },
+            'SF Payments Express'
+        )
+    }
+
+    MockSFPaymentsExpress.propTypes = {
+        expressButtonLayout: PropTypes.string,
+        maximumButtonCount: PropTypes.number,
+        onExpressPaymentCompleted: PropTypes.func
+    }
+
+    return MockSFPaymentsExpress
+})
+
+// Mock SelectBonusProductsCard to verify props being passed
+jest.mock('@salesforce/retail-react-app/app/pages/cart/partials/select-bonus-products-card', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const React = require('react')
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const PropTypes = require('prop-types')
+
+    function MockSelectBonusProductsCard({hideSelectionCounter}) {
+        return React.createElement(
+            'div',
+            {
+                'data-testid': 'select-bonus-products-card',
+                'data-hide-selection-counter': hideSelectionCounter
+            },
+            'Mock Bonus Products Card'
+        )
+    }
+
+    MockSelectBonusProductsCard.propTypes = {
+        hideSelectionCounter: PropTypes.bool
+    }
+
+    return MockSelectBonusProductsCard
+})
+
+// Mock bonus product utilities
+jest.mock('@salesforce/retail-react-app/app/utils/bonus-product', () => ({
+    getRemainingAvailableBonusProductsForProduct: jest.fn(() => ({
+        bonusItems: [
+            {
+                bonusDiscountLineItemId: 'bonus-line-item-1',
+                promotionId: 'promo-123'
+            }
+        ],
+        aggregatedMaxBonusItems: 2,
+        aggregatedSelectedItems: 0
+    })),
+    useBasketProductsWithPromotions: jest.fn(() => ({
+        data: {
+            'test-product-123': {
+                productPromotions: [
+                    {
+                        promotionId: 'promo-123',
+                        calloutMsg: "Buy one men's suit, get 2 free ties"
+                    }
+                ]
+            }
+        }
+    })),
+    getPromotionCalloutText: jest.fn((product, promotionId) => {
+        return (
+            product.productPromotions?.find((p) => p.promotionId === promotionId)?.calloutMsg || ''
+        )
+    }),
+    shouldShowBonusProductSelection: jest.fn(() => true),
+    getPromotionIdsForProduct: jest.fn(() => ['promo-123']),
+    findAvailableBonusDiscountLineItemIds: jest.fn(() => [])
+}))
+
+const MOCK_PRODUCT = {
+    currency: 'USD',
+    id: '701642811398M',
+    imageGroups: [
+        {
+            images: [
+                {
+                    alt: 'Long Sleeve Crew Neck, Fire Red, large',
+                    disBaseLink:
+                        'https://edge.disstg.commercecloud.salesforce.com/dw/image/v2/ZZRF_001/on/demandware.static/-/Sites-apparel-m-catalog/default/dw3ce02e8b/images/large/PG.10219685.JJ825XX.PZ.jpg',
+                    link: 'https://zzrf-001.dx.commercecloud.salesforce.com/on/demandware.static/-/Sites-apparel-m-catalog/default/dw3ce02e8b/images/large/PG.10219685.JJ825XX.PZ.jpg',
+                    title: 'Long Sleeve Crew Neck, Fire Red'
+                },
+                {
+                    alt: 'Long Sleeve Crew Neck, Fire Red, large',
+                    disBaseLink:
+                        'https://edge.disstg.commercecloud.salesforce.com/dw/image/v2/ZZRF_001/on/demandware.static/-/Sites-apparel-m-catalog/default/dwdc28ed23/images/large/PG.10219685.JJ825XX.BZ.jpg',
+                    link: 'https://zzrf-001.dx.commercecloud.salesforce.com/on/demandware.static/-/Sites-apparel-m-catalog/default/dwdc28ed23/images/large/PG.10219685.JJ825XX.BZ.jpg',
+                    title: 'Long Sleeve Crew Neck, Fire Red'
+                }
+            ],
+            variationAttributes: [
+                {
+                    id: 'color',
+                    values: [
+                        {
+                            value: 'JJ825XX'
+                        }
+                    ]
+                }
+            ],
+            viewType: 'large'
+        },
+        {
+            images: [
+                {
+                    alt: 'Long Sleeve Crew Neck, Fire Red, medium',
+                    disBaseLink:
+                        'https://edge.disstg.commercecloud.salesforce.com/dw/image/v2/ZZRF_001/on/demandware.static/-/Sites-apparel-m-catalog/default/dw8434410d/images/medium/PG.10219685.JJ825XX.PZ.jpg',
+                    link: 'https://zzrf-001.dx.commercecloud.salesforce.com/on/demandware.static/-/Sites-apparel-m-catalog/default/dw8434410d/images/medium/PG.10219685.JJ825XX.PZ.jpg',
+                    title: 'Long Sleeve Crew Neck, Fire Red'
+                },
+                {
+                    alt: 'Long Sleeve Crew Neck, Fire Red, medium',
+                    disBaseLink:
+                        'https://edge.disstg.commercecloud.salesforce.com/dw/image/v2/ZZRF_001/on/demandware.static/-/Sites-apparel-m-catalog/default/dwc50f7b16/images/medium/PG.10219685.JJ825XX.BZ.jpg',
+                    link: 'https://zzrf-001.dx.commercecloud.salesforce.com/on/demandware.static/-/Sites-apparel-m-catalog/default/dwc50f7b16/images/medium/PG.10219685.JJ825XX.BZ.jpg',
+                    title: 'Long Sleeve Crew Neck, Fire Red'
+                }
+            ],
+            variationAttributes: [
+                {
+                    id: 'color',
+                    values: [
+                        {
+                            value: 'JJ825XX'
+                        }
+                    ]
+                }
+            ],
+            viewType: 'medium'
+        },
+        {
+            images: [
+                {
+                    alt: 'Long Sleeve Crew Neck, Fire Red, small',
+                    disBaseLink:
+                        'https://edge.disstg.commercecloud.salesforce.com/dw/image/v2/ZZRF_001/on/demandware.static/-/Sites-apparel-m-catalog/default/dw8173d41b/images/small/PG.10219685.JJ825XX.PZ.jpg',
+                    link: 'https://zzrf-001.dx.commercecloud.salesforce.com/on/demandware.static/-/Sites-apparel-m-catalog/default/dw8173d41b/images/small/PG.10219685.JJ825XX.PZ.jpg',
+                    title: 'Long Sleeve Crew Neck, Fire Red'
+                },
+                {
+                    alt: 'Long Sleeve Crew Neck, Fire Red, small',
+                    disBaseLink:
+                        'https://edge.disstg.commercecloud.salesforce.com/dw/image/v2/ZZRF_001/on/demandware.static/-/Sites-apparel-m-catalog/default/dw426088e2/images/small/PG.10219685.JJ825XX.BZ.jpg',
+                    link: 'https://zzrf-001.dx.commercecloud.salesforce.com/on/demandware.static/-/Sites-apparel-m-catalog/default/dw426088e2/images/small/PG.10219685.JJ825XX.BZ.jpg',
+                    title: 'Long Sleeve Crew Neck, Fire Red'
+                }
+            ],
+            variationAttributes: [
+                {
+                    id: 'color',
+                    values: [
+                        {
+                            value: 'JJ825XX'
+                        }
+                    ]
+                }
+            ],
+            viewType: 'small'
+        },
+        {
+            images: [
+                {
+                    alt: 'Long Sleeve Crew Neck, Fire Red, swatch',
+                    disBaseLink:
+                        'https://edge.disstg.commercecloud.salesforce.com/dw/image/v2/ZZRF_001/on/demandware.static/-/Sites-apparel-m-catalog/default/dwcbc8a4ed/images/swatch/PG.10219685.JJ825XX.CP.jpg',
+                    link: 'https://zzrf-001.dx.commercecloud.salesforce.com/on/demandware.static/-/Sites-apparel-m-catalog/default/dwcbc8a4ed/images/swatch/PG.10219685.JJ825XX.CP.jpg',
+                    title: 'Long Sleeve Crew Neck, Fire Red'
+                }
+            ],
+            variationAttributes: [
+                {
+                    id: 'color',
+                    values: [
+                        {
+                            value: 'JJ825XX'
+                        }
+                    ]
+                }
+            ],
+            viewType: 'swatch'
+        }
+    ],
+    inventory: {
+        ats: 89,
+        backorderable: false,
+        id: 'inventory_m',
+        orderable: true,
+        preorderable: false,
+        stockLevel: 89
+    },
+    longDescription:
+        'Wear this long sleeve crew neck top alone, or pair it with a jacket for a classic look.',
+    master: {
+        masterId: '25517823M',
+        orderable: true,
+        price: 14.99
+    },
+    minOrderQuantity: 1,
+    name: 'Long Sleeve Crew Neck',
+    pageDescription:
+        'Wear this long sleeve crew neck top alone, or pair it with a jacket for a classic look.',
+    pageTitle: 'Long Sleeve Crew Neck',
+    price: 14.99,
+    productPromotions: [
+        {
+            calloutMsg: 'Buy one Long Center Seam Skirt and get 2 tops',
+            promotionId: 'ChoiceOfBonusProdect-ProductLevel-ruleBased'
+        }
+    ],
+    shortDescription:
+        'Wear this long sleeve crew neck top alone, or pair it with a jacket for a classic look.',
+    stepQuantity: 1,
+    type: {
+        variant: true
+    },
+    upc: '701642811398',
+    validFrom: {
+        default: '2010-11-18T05:00:00.000Z'
+    },
+    variants: [
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811398M',
+            variationValues: {
+                color: 'JJ825XX',
+                size: '9LG'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642841227M',
+            variationValues: {
+                color: 'JJ3HDXX',
+                size: '9LG'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642841265M',
+            variationValues: {
+                color: 'JJ5QZXX',
+                size: '9LG'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811473M',
+            variationValues: {
+                color: 'JJI15XX',
+                size: '9LG'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811435M',
+            variationValues: {
+                color: 'JJG80XX',
+                size: '9LG'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811312M',
+            variationValues: {
+                color: 'JJ2XNXX',
+                size: '9LG'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811237M',
+            variationValues: {
+                color: 'JJ169XX',
+                size: '9LG'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701643342570M',
+            variationValues: {
+                color: 'JJ3HDXX',
+                size: '9XS'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811343M',
+            variationValues: {
+                color: 'JJ2XNXX',
+                size: '9XL'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811404M',
+            variationValues: {
+                color: 'JJ825XX',
+                size: '9MD'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811336M',
+            variationValues: {
+                color: 'JJ2XNXX',
+                size: '9SM'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811268M',
+            variationValues: {
+                color: 'JJ169XX',
+                size: '9XL'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701643070756M',
+            variationValues: {
+                color: 'JJ2XNXX',
+                size: '9XS'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811497M',
+            variationValues: {
+                color: 'JJI15XX',
+                size: '9SM'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811480M',
+            variationValues: {
+                color: 'JJI15XX',
+                size: '9MD'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811466M',
+            variationValues: {
+                color: 'JJG80XX',
+                size: '9XL'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811428M',
+            variationValues: {
+                color: 'JJ825XX',
+                size: '9XL'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701643070732M',
+            variationValues: {
+                color: 'JJ825XX',
+                size: '9XS'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811244M',
+            variationValues: {
+                color: 'JJ169XX',
+                size: '9MD'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701643070763M',
+            variationValues: {
+                color: 'JJG80XX',
+                size: '9XS'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701643342587M',
+            variationValues: {
+                color: 'JJ5QZXX',
+                size: '9XS'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811503M',
+            variationValues: {
+                color: 'JJI15XX',
+                size: '9XL'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811459M',
+            variationValues: {
+                color: 'JJG80XX',
+                size: '9SM'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701643070725M',
+            variationValues: {
+                color: 'JJ169XX',
+                size: '9XS'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642841289M',
+            variationValues: {
+                color: 'JJ5QZXX',
+                size: '9SM'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642841272M',
+            variationValues: {
+                color: 'JJ5QZXX',
+                size: '9MD'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642841241M',
+            variationValues: {
+                color: 'JJ3HDXX',
+                size: '9SM'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811329M',
+            variationValues: {
+                color: 'JJ2XNXX',
+                size: '9MD'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811251M',
+            variationValues: {
+                color: 'JJ169XX',
+                size: '9SM'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701643070770M',
+            variationValues: {
+                color: 'JJI15XX',
+                size: '9XS'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642841296M',
+            variationValues: {
+                color: 'JJ5QZXX',
+                size: '9XL'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642841258M',
+            variationValues: {
+                color: 'JJ3HDXX',
+                size: '9XL'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811442M',
+            variationValues: {
+                color: 'JJG80XX',
+                size: '9MD'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642811411M',
+            variationValues: {
+                color: 'JJ825XX',
+                size: '9SM'
+            }
+        },
+        {
+            orderable: true,
+            price: 14.99,
+            productId: '701642841234M',
+            variationValues: {
+                color: 'JJ3HDXX',
+                size: '9MD'
+            }
+        }
+    ],
+    variationAttributes: [
+        {
+            id: 'color',
+            name: 'Color',
+            values: [
+                {
+                    name: 'Black',
+                    orderable: true,
+                    value: 'JJ169XX'
+                },
+                {
+                    name: 'Grey Heather',
+                    orderable: true,
+                    value: 'JJ2XNXX'
+                },
+                {
+                    name: 'Meadow Violet',
+                    orderable: true,
+                    value: 'JJ3HDXX'
+                },
+                {
+                    name: 'Begonia Pink',
+                    orderable: true,
+                    value: 'JJ5QZXX'
+                },
+                {
+                    name: 'Fire Red',
+                    orderable: true,
+                    value: 'JJ825XX'
+                },
+                {
+                    name: 'Sugar',
+                    orderable: true,
+                    value: 'JJG80XX'
+                },
+                {
+                    name: 'White',
+                    orderable: true,
+                    value: 'JJI15XX'
+                }
+            ]
+        },
+        {
+            id: 'size',
+            name: 'Size',
+            values: [
+                {
+                    name: 'XS',
+                    orderable: true,
+                    value: '9XS'
+                },
+                {
+                    name: 'S',
+                    orderable: true,
+                    value: '9SM'
+                },
+                {
+                    name: 'M',
+                    orderable: true,
+                    value: '9MD'
+                },
+                {
+                    name: 'L',
+                    orderable: true,
+                    value: '9LG'
+                },
+                {
+                    name: 'XL',
+                    orderable: true,
+                    value: '9XL'
+                }
+            ]
+        }
+    ],
+    variationValues: {
+        color: 'JJ825XX',
+        size: '9LG'
+    },
+    c_color: 'JJ825XX',
+    c_refinementColor: 'red',
+    c_size: '9LG',
+    c_width: 'Z'
+}
+
+// Mock data for testing individual products with missing image data
+const MOCK_PRODUCT_NO_IMAGE_LINK = {
+    ...MOCK_PRODUCT,
+    price: 29.99,
+    currency: 'USD',
+    imageGroups: [
+        {
+            viewType: 'small',
+            images: [
+                {
+                    alt: 'Test product image',
+                    disBaseLink: 'https://example.com/image.jpg'
+                }
+            ]
+        }
+    ]
+}
+
+const MOCK_PRODUCT_NO_IMAGE_GROUPS = {
+    ...MOCK_PRODUCT,
+    price: 29.99,
+    currency: 'USD',
+    imageGroups: []
+}
+
+// Mock data for testing bundle products with missing image data
+const MOCK_BUNDLE_NO_IMAGE_LINK = {
+    ...mockProductBundle,
+    price: 59.99,
+    currency: 'USD',
+    imageGroups: [
+        {
+            viewType: 'small',
+            images: [
+                {
+                    alt: 'Bundle product image',
+                    disBaseLink: 'https://example.com/bundle-image.jpg'
+                }
+            ]
+        }
+    ]
+}
+
+const MOCK_BUNDLE_NO_IMAGE_GROUPS = {
+    ...mockProductBundle,
+    price: 59.99,
+    currency: 'USD',
+    imageGroups: []
+}
+
+beforeEach(() => {
+    jest.resetModules()
+    global.server.use(
+        rest.get('*/customers/:customerId/baskets', (req, res, ctx) => {
+            return res(ctx.delay(0), ctx.status(200), ctx.json(mockCustomerBaskets))
+        })
+    )
+    mockUseCurrentBasket.mockReturnValue({
+        data: {},
+        derivedData: {},
+        currency: 'USD'
+    })
+    // Default mock with sfPayments disabled
+    mockUseSFPaymentsEnabled.mockReturnValue(false)
+})
+
+test('Renders AddToCartModal with multiple products', () => {
+    const MOCK_DATA = {
+        product: MOCK_PRODUCT,
+        itemsAdded: [
+            {
+                product: MOCK_PRODUCT,
+                variant: MOCK_PRODUCT.variants[0],
+                id: '701642811399M',
+                quantity: 22
+            },
+            {
+                product: MOCK_PRODUCT,
+                variant: MOCK_PRODUCT.variants[1],
+                quantity: 1
+            }
+        ]
+    }
+
+    renderWithProviders(
+        <AddToCartModalContext.Provider
+            value={{
+                isOpen: true,
+                data: MOCK_DATA
+            }}
+        >
+            <AddToCartModal />
+        </AddToCartModalContext.Provider>
+    )
+
+    expect(screen.getAllByText(MOCK_PRODUCT.name)[0]).toBeInTheDocument()
+    expect(screen.getByRole('dialog', {name: /23 items added to cart/i})).toBeInTheDocument()
+
+    const numOfRowsRendered = screen.getAllByTestId('product-added').length
+    expect(numOfRowsRendered).toEqual(MOCK_DATA.itemsAdded.length)
+})
+
+test('Do not render when isOpen is false', () => {
+    const {queryByText} = renderWithProviders(
+        <AddToCartModalContext.Provider
+            value={{
+                isOpen: false
+            }}
+        >
+            <AddToCartModal />
+        </AddToCartModalContext.Provider>
+    )
+
+    expect(queryByText(MOCK_PRODUCT.name)).not.toBeInTheDocument()
+})
+
+test('renders product bundle', () => {
+    const MOCK_DATA = {
+        product: mockProductBundle,
+        itemsAdded: mockBundleItemsAdded,
+        selectedQuantity: 1
+    }
+
+    renderWithProviders(
+        <AddToCartModalContext.Provider
+            value={{
+                isOpen: true,
+                data: MOCK_DATA
+            }}
+        >
+            <AddToCartModal />
+        </AddToCartModalContext.Provider>
+    )
+
+    expect(screen.getByText(mockProductBundle.name)).toBeInTheDocument()
+    expect(screen.getByRole('dialog', {name: /1 item added to cart/i})).toBeInTheDocument()
+
+    // bundle data is displayed in 1 row
+    const numOfRowsRendered = screen.getAllByTestId('product-added').length
+    expect(numOfRowsRendered).toBe(1)
+
+    // modal displays product name of children and variant selection
+    mockBundleItemsAdded.forEach(({product, variant, quantity}) => {
+        const displayedName = quantity > 1 ? `${product.name} (${quantity})` : product.name
+        expect(screen.getByText(displayedName)).toBeInTheDocument()
+
+        const variationAttributeValues = getDisplayVariationValues(
+            product.variationAttributes,
+            variant.variationValues
+        )
+
+        // Looks for text displaying variant ('Color: Black' or 'Size: S') in modal
+        Object.entries(variationAttributeValues).forEach(([name, value]) => {
+            expect(screen.getAllByText(`${name}: ${value}`)[0]).toBeInTheDocument()
+        })
+    })
+})
+
+test('renders individual product image correctly when there is no image link', async () => {
+    const MOCK_DATA_NO_IMAGE = {
+        product: MOCK_PRODUCT_NO_IMAGE_LINK,
+        itemsAdded: [
+            {
+                product: MOCK_PRODUCT_NO_IMAGE_LINK,
+                variant: MOCK_PRODUCT.variants[0], // Provide a variant to avoid undefined errors
+                quantity: 1
+            }
+        ],
+        selectedQuantity: 1
+    }
+
+    renderWithProviders(
+        <AddToCartModalContext.Provider
+            value={{
+                isOpen: true,
+                data: MOCK_DATA_NO_IMAGE
+            }}
+        >
+            <AddToCartModal />
+        </AddToCartModalContext.Provider>
+    )
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText(MOCK_PRODUCT.name)).toBeInTheDocument()
+})
+
+test('renders individual product image when image object is not provided', async () => {
+    const MOCK_DATA_NO_IMAGE_OBJECT = {
+        product: MOCK_PRODUCT_NO_IMAGE_GROUPS,
+        itemsAdded: [
+            {
+                product: MOCK_PRODUCT_NO_IMAGE_GROUPS,
+                variant: MOCK_PRODUCT.variants[0],
+                quantity: 1
+            }
+        ],
+        selectedQuantity: 1
+    }
+
+    renderWithProviders(
+        <AddToCartModalContext.Provider
+            value={{
+                isOpen: true,
+                data: MOCK_DATA_NO_IMAGE_OBJECT
+            }}
+        >
+            <AddToCartModal />
+        </AddToCartModalContext.Provider>
+    )
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText(MOCK_PRODUCT.name)).toBeInTheDocument()
+})
+
+test('renders bundle product image correctly when there is no image link', async () => {
+    const MOCK_BUNDLE_DATA_NO_IMAGE = {
+        product: MOCK_BUNDLE_NO_IMAGE_LINK,
+        itemsAdded: mockBundleItemsAdded,
+        selectedQuantity: 1
+    }
+
+    renderWithProviders(
+        <AddToCartModalContext.Provider
+            value={{
+                isOpen: true,
+                data: MOCK_BUNDLE_DATA_NO_IMAGE
+            }}
+        >
+            <AddToCartModal />
+        </AddToCartModalContext.Provider>
+    )
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText(mockProductBundle.name)).toBeInTheDocument()
+})
+
+test('renders bundle product image when image object is not provided', async () => {
+    const MOCK_BUNDLE_DATA_NO_IMAGE_OBJECT = {
+        product: MOCK_BUNDLE_NO_IMAGE_GROUPS,
+        itemsAdded: mockBundleItemsAdded,
+        selectedQuantity: 1
+    }
+
+    renderWithProviders(
+        <AddToCartModalContext.Provider
+            value={{
+                isOpen: true,
+                data: MOCK_BUNDLE_DATA_NO_IMAGE_OBJECT
+            }}
+        >
+            <AddToCartModal />
+        </AddToCartModalContext.Provider>
+    )
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText(mockProductBundle.name)).toBeInTheDocument()
+})
+
+test('displays standard products in bundle without variation attributes', async () => {
+    const modalData = {
+        product: mockBundleWithStandardProducts,
+        itemsAdded: mockBundleItemsWithStandardProducts,
+        selectedQuantity: 1
+    }
+
+    // Mock the basket data to include currency at the top level
+    const mockBasket = {
+        data: mockBasketWithStandardProducts,
+        derivedData: {
+            totalItems: 2
+        },
+        currency: 'USD'
+    }
+
+    mockUseCurrentBasket.mockReturnValue(mockBasket)
+
+    renderWithProviders(
+        <AddToCartModalContext.Provider
+            value={{
+                isOpen: true,
+                onClose: jest.fn(),
+                data: modalData
+            }}
+        >
+            <AddToCartModal />
+        </AddToCartModalContext.Provider>
+    )
+
+    expect(screen.getByText('Standard Product (2)')).toBeInTheDocument()
+
+    expect(screen.queryByText(/Color:/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Size:/)).not.toBeInTheDocument()
+})
+
+test('renders SelectBonusProductsCard with hideSelectionCounter=true in add-to-cart modal', () => {
+    // Mock product with bonus products eligibility
+    const MOCK_PRODUCT_WITH_BONUS = {
+        ...MOCK_PRODUCT,
+        id: 'test-product-123',
+        productPromotions: [
+            {
+                promotionId: 'promo-123',
+                calloutMsg: "Buy one men's suit, get 2 free ties"
+            }
+        ]
+    }
+
+    const MOCK_DATA_WITH_BONUS = {
+        product: MOCK_PRODUCT_WITH_BONUS,
+        itemsAdded: [
+            {
+                product: MOCK_PRODUCT_WITH_BONUS,
+                variant: MOCK_PRODUCT.variants[0],
+                quantity: 1
+            }
+        ]
+    }
+
+    // Mock basket with bonus discount line items
+    const mockBasketWithBonusItems = {
+        data: {
+            bonusDiscountLineItems: [
+                {
+                    id: 'bonus-line-item-1',
+                    promotionId: 'promo-123',
+                    maxBonusItems: 2
+                }
+            ],
+            productSubTotal: 191.99,
+            currency: 'USD'
+        },
+        derivedData: {
+            totalItems: 1
+        },
+        currency: 'USD'
+    }
+
+    mockUseCurrentBasket.mockReturnValue(mockBasketWithBonusItems)
+
+    renderWithProviders(
+        <AddToCartModalContext.Provider
+            value={{
+                isOpen: true,
+                data: MOCK_DATA_WITH_BONUS,
+                onClose: jest.fn()
+            }}
+        >
+            <AddToCartModal />
+        </AddToCartModalContext.Provider>
+    )
+
+    // Verify that the SelectBonusProductsCard is rendered with hideSelectionCounter=true
+    const bonusProductsCard = screen.getByTestId('select-bonus-products-card')
+    expect(bonusProductsCard).toBeInTheDocument()
+    expect(bonusProductsCard).toHaveAttribute('data-hide-selection-counter', 'true')
+})
+
+test('selects bonusDiscountLineItem with remaining capacity when first one is fully allocated', () => {
+    // This test covers the specific bug fix where adding the same qualifying product
+    // multiple times should find a bonusDiscountLineItem with remaining capacity
+    const MOCK_PRODUCT_WITH_BONUS = {
+        ...MOCK_PRODUCT,
+        id: 'test-product-123',
+        productPromotions: [
+            {
+                promotionId: 'promo-123',
+                calloutMsg: "Buy one men's suit, get 2 free ties"
+            }
+        ]
+    }
+
+    const MOCK_DATA_WITH_BONUS = {
+        product: MOCK_PRODUCT_WITH_BONUS,
+        itemsAdded: [
+            {
+                product: MOCK_PRODUCT_WITH_BONUS,
+                variant: MOCK_PRODUCT.variants[0],
+                quantity: 1
+            }
+        ]
+    }
+
+    // Mock basket with multiple bonusDiscountLineItems for same promotion
+    // The first one is fully allocated (2/2), the second has capacity (0/2)
+    const mockBasketWithMultipleBonusItems = {
+        data: {
+            bonusDiscountLineItems: [
+                {
+                    id: 'bonus-line-item-1',
+                    promotionId: 'promo-123',
+                    maxBonusItems: 2
+                },
+                {
+                    id: 'bonus-line-item-2',
+                    promotionId: 'promo-123',
+                    maxBonusItems: 2
+                }
+            ],
+            productItems: [
+                // Two bonus products selected for the first bonusDiscountLineItem
+                {
+                    productId: 'bonus-product-1',
+                    bonusProductLineItem: true,
+                    bonusDiscountLineItemId: 'bonus-line-item-1',
+                    quantity: 1
+                },
+                {
+                    productId: 'bonus-product-2',
+                    bonusProductLineItem: true,
+                    bonusDiscountLineItemId: 'bonus-line-item-1',
+                    quantity: 1
+                }
+                // No bonus products selected for bonus-line-item-2 yet
+            ],
+            productSubTotal: 191.99,
+            currency: 'USD'
+        },
+        derivedData: {
+            totalItems: 3
+        },
+        currency: 'USD'
+    }
+
+    mockUseCurrentBasket.mockReturnValue(mockBasketWithMultipleBonusItems)
+
+    renderWithProviders(
+        <AddToCartModalContext.Provider
+            value={{
+                isOpen: true,
+                data: MOCK_DATA_WITH_BONUS,
+                onClose: jest.fn()
+            }}
+        >
+            <AddToCartModal />
+        </AddToCartModalContext.Provider>
+    )
+
+    // Verify that the SelectBonusProductsCard is still rendered
+    // This proves that the component found bonus-line-item-2 (which has capacity)
+    // instead of stopping at bonus-line-item-1 (which is fully allocated)
+    const bonusProductsCard = screen.getByTestId('select-bonus-products-card')
+    expect(bonusProductsCard).toBeInTheDocument()
+    expect(bonusProductsCard).toHaveAttribute('data-hide-selection-counter', 'true')
+})
+
+test('renders SFPaymentsExpress when sfPayments is enabled', () => {
+    // Enable sfPayments
+    mockUseSFPaymentsEnabled.mockReturnValue(true)
+
+    const MOCK_DATA = {
+        product: MOCK_PRODUCT,
+        itemsAdded: [
+            {
+                product: MOCK_PRODUCT,
+                variant: MOCK_PRODUCT.variants[0],
+                quantity: 1
+            }
+        ]
+    }
+
+    mockUseCurrentBasket.mockReturnValue({
+        data: {
+            productSubTotal: 14.99,
+            currency: 'USD'
+        },
+        derivedData: {
+            totalItems: 1
+        },
+        currency: 'USD'
+    })
+
+    renderWithProviders(
+        <AddToCartModalContext.Provider
+            value={{
+                isOpen: true,
+                data: MOCK_DATA,
+                onClose: jest.fn()
+            }}
+        >
+            <AddToCartModal />
+        </AddToCartModalContext.Provider>
+    )
+
+    // Verify SFPaymentsExpress component is rendered with correct props (rendered twice: desktop + mobile)
+    const sfPaymentsExpressComponents = screen.getAllByTestId('sf-payments-express')
+    expect(sfPaymentsExpressComponents).toHaveLength(2) // Desktop and mobile views
+    sfPaymentsExpressComponents.forEach((component) => {
+        expect(component).toBeInTheDocument()
+        expect(component).toHaveAttribute('data-button-layout', 'vertical')
+        expect(component).toHaveAttribute('data-maximum-button-count', '1')
+        expect(component).toHaveAttribute('data-has-completion-callback', 'true')
+    })
+})
+
+test('does not render SFPaymentsExpress when sfPayments is disabled', () => {
+    // sfPayments disabled by default in beforeEach
+    const MOCK_DATA = {
+        product: MOCK_PRODUCT,
+        itemsAdded: [
+            {
+                product: MOCK_PRODUCT,
+                variant: MOCK_PRODUCT.variants[0],
+                quantity: 1
+            }
+        ]
+    }
+
+    mockUseCurrentBasket.mockReturnValue({
+        data: {
+            productSubTotal: 14.99,
+            currency: 'USD'
+        },
+        derivedData: {
+            totalItems: 1
+        },
+        currency: 'USD'
+    })
+
+    renderWithProviders(
+        <AddToCartModalContext.Provider
+            value={{
+                isOpen: true,
+                data: MOCK_DATA,
+                onClose: jest.fn()
+            }}
+        >
+            <AddToCartModal />
+        </AddToCartModalContext.Provider>
+    )
+
+    // Verify SFPaymentsExpress component is NOT rendered
+    expect(screen.queryByTestId('sf-payments-express')).not.toBeInTheDocument()
+})
+
+test('does not render SFPaymentsExpress when useSFPaymentsEnabled returns false', () => {
+    // Explicitly set sfPayments to false
+    mockUseSFPaymentsEnabled.mockReturnValue(false)
+
+    const MOCK_DATA = {
+        product: MOCK_PRODUCT,
+        itemsAdded: [
+            {
+                product: MOCK_PRODUCT,
+                variant: MOCK_PRODUCT.variants[0],
+                quantity: 1
+            }
+        ]
+    }
+
+    mockUseCurrentBasket.mockReturnValue({
+        data: {
+            productSubTotal: 14.99,
+            currency: 'USD'
+        },
+        derivedData: {
+            totalItems: 1
+        },
+        currency: 'USD'
+    })
+
+    renderWithProviders(
+        <AddToCartModalContext.Provider
+            value={{
+                isOpen: true,
+                data: MOCK_DATA,
+                onClose: jest.fn()
+            }}
+        >
+            <AddToCartModal />
+        </AddToCartModalContext.Provider>
+    )
+
+    // Verify SFPaymentsExpress component is NOT rendered
+    expect(screen.queryByTestId('sf-payments-express')).not.toBeInTheDocument()
+})

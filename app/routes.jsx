@@ -1,0 +1,177 @@
+/*
+ * Copyright (c) 2021, salesforce.com, inc.
+ * All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+ */
+
+/* istanbul ignore file */
+// NOTE!
+// This file is being ignored in the test coverage report for now. It reports `0%` functions
+// tested, which brings down the overall coverage and blocks CI. There are tests still, but
+// we don't want it to count toward coverage until we figure out how to cover the `functions`
+// metric for this file in its test.
+
+import React from 'react'
+import loadable from '@loadable/component'
+import {getConfig} from '@salesforce/pwa-kit-runtime/utils/ssr-config'
+
+// Components
+import {Skeleton} from '@salesforce/retail-react-app/app/components/shared/ui'
+import {configureRoutes} from '@salesforce/retail-react-app/app/utils/routes-utils'
+
+const fallback = <Skeleton height="75vh" width="100%" />
+
+// Pages
+const Home = loadable(() => import('./pages/home'), {fallback})
+const Login = loadable(() => import('./pages/login'), {fallback})
+const Registration = loadable(() => import('./pages/registration'), {
+    fallback
+})
+const ResetPassword = loadable(() => import('./pages/reset-password'), {fallback})
+const Account = loadable(() => import('./pages/account'), {fallback})
+const Cart = loadable(() => import('./pages/cart'), {fallback})
+const Checkout = loadable(() => import('./pages/checkout'), {
+    fallback
+})
+const CheckoutOneClick = loadable(() => import('./pages/checkout-one-click'), {
+    fallback
+})
+const CheckoutConfirmation = loadable(() => import('./pages/confirmation'), {fallback})
+const SocialLoginRedirect = loadable(() => import('./pages/social-login-redirect'), {fallback})
+const LoginRedirect = loadable(() => import('./pages/login-redirect'), {fallback})
+const ProductDetail = loadable(() => import('./pages/product-detail'), {fallback})
+const ProductList = loadable(() => import('./pages/product-list'), {
+    fallback
+})
+const StoreLocator = loadable(() => import('./pages/store-locator'), {
+    fallback
+})
+const Wishlist = loadable(() => import('./pages/account/wishlist'), {
+    fallback
+})
+const PaymentProcessing = loadable(() => import('./pages/checkout/payment-processing'), {fallback})
+const PageNotFound = loadable(() => import('./pages/page-not-found'))
+const LoyaltyDetails = loadable(() => import('./pages/loyalty-details'),{fallback})
+
+export const routes = [
+    {
+        path: '/',
+        component: Home,
+        exact: true
+    },
+    {
+        path: '/login',
+        component: Login,
+        exact: true
+    },
+    {
+        path: '/registration',
+        component: Registration,
+        exact: true
+    },
+    {
+        path: '/reset-password',
+        component: ResetPassword,
+        exact: true
+    },
+    {
+        path: '/account',
+        component: Account
+    },
+    {
+        path: '/checkout',
+        component: (props) => {
+            // One Click Checkout: Saves shipping/payment for returning shoppers. Security required:
+            // (1) Captcha for passwordless login, (2) OTP for email changes. See config/default.js for details.
+            const enabled = getConfig()?.app?.oneClickCheckout?.enabled
+            return enabled ? <CheckoutOneClick {...props} /> : <Checkout {...props} />
+        },
+        exact: true
+    },
+    {
+        path: '/checkout/confirmation/:orderNo',
+        component: CheckoutConfirmation
+    },
+    {
+        path: '/checkout/payment-processing',
+        component: PaymentProcessing
+    },
+    {
+        path: '/callback',
+        component: LoginRedirect,
+        exact: true
+    },
+    {
+        path: '/cart',
+        component: Cart,
+        exact: true
+    },
+    {
+        path: '/product/:productId',
+        component: ProductDetail
+    },
+    {
+        path: '/search',
+        component: ProductList
+    },
+    {
+        path: '/category/:categoryId',
+        component: ProductList
+    },
+    {
+        path: '/account/wishlist',
+        component: Wishlist
+    },
+    {
+        path: '/store-locator',
+        component: StoreLocator
+    },
+    {
+        path: '/loyalty',
+        component: LoyaltyDetails
+    },
+    {
+        path: '*',
+        component: PageNotFound
+    }
+]
+
+export default () => {
+    const config = getConfig()
+    const loginConfig = config?.app?.login
+    const resetPasswordLandingPath = loginConfig?.resetPassword?.landingPath
+    const socialLoginEnabled = loginConfig?.social?.enabled
+    const socialRedirectURI = loginConfig?.social?.redirectURI
+    const passwordlessLoginEnabled = loginConfig?.passwordless?.enabled
+    const passwordlessLoginLandingPath = loginConfig?.passwordless?.landingPath
+
+    // Add dynamic routes conditionally (only if features are enabled and paths are defined)
+    const dynamicRoutes = [
+        resetPasswordLandingPath && {
+            path: resetPasswordLandingPath,
+            component: ResetPassword,
+            exact: true
+        },
+        passwordlessLoginEnabled &&
+            passwordlessLoginLandingPath && {
+                path: passwordlessLoginLandingPath,
+                component: Login,
+                exact: true
+            },
+        socialLoginEnabled &&
+            socialRedirectURI && {
+                path: socialRedirectURI,
+                component: SocialLoginRedirect,
+                exact: true
+            }
+    ].filter(Boolean)
+
+    const allRoutes = configureRoutes([...routes, ...dynamicRoutes], config, {
+        ignoredRoutes: ['/callback'],
+        fuzzyPathMatching: true
+    })
+
+    // Add catch-all route at the end so it doesn't match before dynamic routes
+    return [...allRoutes, {path: '*', component: PageNotFound}]
+}
