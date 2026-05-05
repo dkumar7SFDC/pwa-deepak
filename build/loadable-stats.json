@@ -1,14 +1,12 @@
 {
   "name": "client",
-  "hash": "504fe6b42fb2f0a0703d",
+  "hash": "c643e7552954579d47c2",
   "publicPath": "/mobify/bundle/development/",
   "outputPath": "/Users/dkumar7/pwa-kit-starter-project/build",
   "assetsByChunkName": {
     "main": [
       "main.js",
-      "main.1c9d697929fd51ec6d65.hot-update.js",
-      "main.js.map",
-      "main.1c9d697929fd51ec6d65.hot-update.js.map"
+      "main.js.map"
     ],
     "pages-home": [
       "pages-home.js",
@@ -192,31 +190,6 @@
     },
     {
       "type": "asset",
-      "name": "pages-product-list.js",
-      "size": 230455,
-      "emitted": false,
-      "comparedForEmit": false,
-      "cached": true,
-      "info": {
-        "javascriptModule": false,
-        "related": {
-          "sourceMap": "pages-product-list.js.map"
-        }
-      },
-      "chunkNames": [
-        "pages-product-list"
-      ],
-      "chunkIdHints": [],
-      "auxiliaryChunkNames": [],
-      "auxiliaryChunkIdHints": [],
-      "filteredRelated": 1,
-      "chunks": [
-        "pages-product-list"
-      ],
-      "auxiliaryChunks": []
-    },
-    {
-      "type": "asset",
       "name": "pages-account.js",
       "size": 225544,
       "emitted": false,
@@ -237,6 +210,31 @@
       "filteredRelated": 1,
       "chunks": [
         "pages-account"
+      ],
+      "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
+      "name": "pages-product-list.js",
+      "size": 225535,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "javascriptModule": false,
+        "related": {
+          "sourceMap": "pages-product-list.js.map"
+        }
+      },
+      "chunkNames": [
+        "pages-product-list"
+      ],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "filteredRelated": 1,
+      "chunks": [
+        "pages-product-list"
       ],
       "auxiliaryChunks": []
     },
@@ -749,33 +747,6 @@
     },
     {
       "type": "asset",
-      "name": "main.1c9d697929fd51ec6d65.hot-update.js",
-      "size": 6805,
-      "emitted": false,
-      "comparedForEmit": false,
-      "cached": true,
-      "info": {
-        "hotModuleReplacement": true,
-        "immutable": true,
-        "fullhash": "1c9d697929fd51ec6d65",
-        "related": {
-          "sourceMap": "main.1c9d697929fd51ec6d65.hot-update.js.map"
-        }
-      },
-      "chunkNames": [
-        "main"
-      ],
-      "chunkIdHints": [],
-      "auxiliaryChunkNames": [],
-      "auxiliaryChunkIdHints": [],
-      "filteredRelated": 1,
-      "chunks": [
-        "main"
-      ],
-      "auxiliaryChunks": []
-    },
-    {
-      "type": "asset",
       "name": "app_page-designer_layouts_mobileGrid2r1c_index_jsx.js",
       "size": 4953,
       "emitted": false,
@@ -984,25 +955,6 @@
         "_1242"
       ],
       "auxiliaryChunks": []
-    },
-    {
-      "type": "asset",
-      "name": "main.1c9d697929fd51ec6d65.hot-update.json",
-      "size": 236,
-      "emitted": false,
-      "comparedForEmit": false,
-      "cached": true,
-      "info": {
-        "hotModuleReplacement": true,
-        "immutable": true,
-        "fullhash": "1c9d697929fd51ec6d65"
-      },
-      "chunkNames": [],
-      "chunkIdHints": [],
-      "auxiliaryChunkNames": [],
-      "auxiliaryChunkIdHints": [],
-      "chunks": [],
-      "auxiliaryChunks": []
     }
   ],
   "namedChunkGroups": {
@@ -1018,14 +970,11 @@
         },
         {
           "name": "main.js"
-        },
-        {
-          "name": "main.1c9d697929fd51ec6d65.hot-update.js"
         }
       ],
       "filteredAssets": 0,
       "assetsSize": null,
-      "filteredAuxiliaryAssets": 3,
+      "filteredAuxiliaryAssets": 2,
       "auxiliaryAssetsSize": null,
       "children": {},
       "childAssets": {}
@@ -1466,8 +1415,7 @@
     {
       "id": "main",
       "files": [
-        "main.js",
-        "main.1c9d697929fd51ec6d65.hot-update.js"
+        "main.js"
       ]
     },
     {

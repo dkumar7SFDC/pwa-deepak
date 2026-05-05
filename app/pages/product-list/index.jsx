@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
-import React, {useEffect, useState} from 'react'
+import React, {useEffect, useMemo, useRef, useState} from 'react'
 import PropTypes from 'prop-types'
 import {useHistory, useLocation, useParams} from 'react-router-dom'
 import {FormattedMessage, useIntl} from 'react-intl'
@@ -43,11 +43,11 @@ import {
     DrawerHeader,
     DrawerOverlay,
     DrawerContent,
-    DrawerCloseButton
+    DrawerCloseButton,
+    Spinner
 } from '@salesforce/retail-react-app/app/components/shared/ui'
 
 // Project Components
-import Pagination from '@salesforce/retail-react-app/app/components/pagination'
 import ProductTile, {
     Skeleton as ProductTileSkeleton
 } from '@salesforce/retail-react-app/app/components/product-tile'
@@ -68,7 +68,6 @@ import {FilterIcon, ChevronDownIcon} from '@salesforce/retail-react-app/app/comp
 // Hooks
 import {
     useLimitUrls,
-    usePageUrls,
     useSortUrls,
     useSearchParams
 } from '@salesforce/retail-react-app/app/hooks'
@@ -76,6 +75,7 @@ import {useToast} from '@salesforce/retail-react-app/app/hooks/use-toast'
 import useEinstein from '@salesforce/retail-react-app/app/hooks/use-einstein'
 import useDataCloud from '@salesforce/retail-react-app/app/hooks/use-datacloud'
 import useActiveData from '@salesforce/retail-react-app/app/hooks/use-active-data'
+import useIntersectionObserver from '@salesforce/retail-react-app/app/hooks/use-intersection-observer'
 
 // Others
 import {HTTPNotFound, HTTPError} from '@salesforce/pwa-kit-react-sdk/ssr/universal/errors'
@@ -157,15 +157,53 @@ const ProductList = (props) => {
 
     const refine = searchByInventory ? [..._refine, `ilids=${searchByInventory}`] : _refine
 
+    /**************** Infinite Scroll State ****************/
+    // Internal offset that drives the product search request. We override the URL `offset`
+    // so we can load more pages by simply incrementing this value when the sentinel below
+    // the product grid scrolls into view.
+    const pageLimit = restOfParams.limit || DEFAULT_LIMIT_VALUES[0]
+    const [loadedOffset, setLoadedOffset] = useState(0)
+    const [accumulatedHits, setAccumulatedHits] = useState([])
+    // Track the last response offset that was merged into `accumulatedHits` so each response
+    // is only appended once even if effects re-run.
+    const lastAppendedOffsetRef = useRef(-1)
+
+    // A signature representing the current "search". When this changes (filter, sort, search
+    // query, category, etc. — anything except offset) we reset the infinite scroll state so
+    // the user starts fresh from the top of the new result set.
+    const searchSignature = useMemo(
+        () =>
+            JSON.stringify({
+                q: restOfParams.q ?? null,
+                sort: restOfParams.sort ?? null,
+                limit: pageLimit,
+                refine,
+                cgid: params.categoryId ?? null
+            }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [restOfParams.q, restOfParams.sort, pageLimit, JSON.stringify(refine), params.categoryId]
+    )
+
+    const previousSignatureRef = useRef(searchSignature)
+    if (previousSignatureRef.current !== searchSignature) {
+        previousSignatureRef.current = searchSignature
+        // Reset synchronously during render so the immediate fetch uses offset 0.
+        if (loadedOffset !== 0) setLoadedOffset(0)
+        if (accumulatedHits.length !== 0) setAccumulatedHits([])
+        lastAppendedOffsetRef.current = -1
+    }
+
     const {
         isLoading,
         isFetched,
+        isFetching,
         isRefetching,
         data: productSearchResult
     } = useProductSearch(
         {
             parameters: {
                 ...restOfParams,
+                offset: loadedOffset,
                 perPricebook: true,
                 allVariationProperties: true,
                 allImages: true,
@@ -184,6 +222,27 @@ const ProductList = (props) => {
             keepPreviousData: true
         }
     )
+
+    // Append (or replace, for offset 0) hits whenever the latest response arrives. We hold off
+    // committing the response while we're still on the very first fetch (no prior data yet) so
+    // that the initial render can show skeletons rather than partial/intermediate data.
+    useEffect(() => {
+        if (!productSearchResult?.hits) return
+        if (isRefetching && !isFetched) return
+        const responseOffset = productSearchResult.offset ?? 0
+        if (responseOffset === 0) {
+            setAccumulatedHits(productSearchResult.hits)
+            lastAppendedOffsetRef.current = 0
+        } else if (responseOffset > lastAppendedOffsetRef.current) {
+            setAccumulatedHits((prev) => {
+                // Defensively de-duplicate in case the same offset slipped through twice.
+                const seen = new Set(prev.map((h) => h.productId))
+                const fresh = productSearchResult.hits.filter((h) => !seen.has(h.productId))
+                return [...prev, ...fresh]
+            })
+            lastAppendedOffsetRef.current = responseOffset
+        }
+    }, [productSearchResult, isRefetching, isFetched])
 
     const {error, data: category} = useCategory(
         {
@@ -223,25 +282,44 @@ const ProductList = (props) => {
         )
     }
 
-    // Reset scroll position when `isRefetching` becomes `true`.
+    // Reset scroll position when filters/sort/search change (i.e. while we're still on the
+    // first page of the result set). We skip this for `loadedOffset > 0` so that scrolling
+    // down to load more does not yank the viewport back to the top.
     useEffect(() => {
-        isRefetching && window.scrollTo(0, 0)
+        if (loadedOffset !== 0) return
+        if (isRefetching) window.scrollTo(0, 0)
         setFiltersLoading(isRefetching)
-    }, [isRefetching])
+    }, [isRefetching, loadedOffset])
 
     /**************** Render Variables ****************/
     const basePath = `${location.pathname}${location.search}`
-    const showNoResults = !isLoading && productSearchResult && !productSearchResult?.hits
-    const {total, sortingOptions} = productSearchResult || {}
+    const total = productSearchResult?.total ?? 0
+    const showNoResults =
+        !isLoading && productSearchResult && total === 0 && accumulatedHits.length === 0
+    const {sortingOptions} = productSearchResult || {}
     const selectedSortingOptionLabel =
         sortingOptions?.find(
             (option) => option.id === productSearchResult?.selectedSortingOption
         ) ?? sortingOptions?.[0]
 
-    // Get urls to be used for pagination, page size changes, and sorting.
-    const pageUrls = usePageUrls({total})
     const sortUrls = useSortUrls({options: sortingOptions})
     const limitUrls = useLimitUrls()
+
+    /**************** Infinite Scroll Trigger ****************/
+    const sentinelRef = useRef(null)
+    const isSentinelVisible = useIntersectionObserver(sentinelRef, {rootMargin: '600px 0px'})
+    const hasMore = accumulatedHits.length > 0 && accumulatedHits.length < total
+    const isLoadingMore =
+        isFetching && accumulatedHits.length > 0 && loadedOffset > lastAppendedOffsetRef.current
+
+    useEffect(() => {
+        if (!isSentinelVisible) return
+        if (!hasMore || isFetching) return
+        const nextOffset = accumulatedHits.length
+        if (nextOffset > loadedOffset && nextOffset < total) {
+            setLoadedOffset(nextOffset)
+        }
+    }, [isSentinelVisible, hasMore, isFetching, accumulatedHits.length, loadedOffset, total])
 
     /**************** Action Handlers ****************/
     const {data: wishlist} = useWishList()
@@ -600,13 +678,17 @@ const ProductList = (props) => {
                                     spacingY={{base: 12, lg: 16}}
                                 >
                                     {isHydrated() &&
-                                    ((isRefetching && !isFetched) || !productSearchResult)
+                                    accumulatedHits.length === 0 &&
+                                    (isLoading ||
+                                        isFetching ||
+                                        (isRefetching && !isFetched) ||
+                                        !productSearchResult)
                                         ? new Array(searchParams.limit)
                                               .fill(0)
                                               .map((value, index) => (
                                                   <ProductTileSkeleton key={index} />
                                               ))
-                                        : productSearchResult?.hits?.map(
+                                        : accumulatedHits.map(
                                               (productSearchItem, index) => {
                                                   const productId = productSearchItem.productId
                                                   const isInWishlist =
@@ -689,31 +771,55 @@ const ProductList = (props) => {
                                               }
                                           )}
                                 </SimpleGrid>
-                                {/* Footer */}
-                                <Flex
-                                    justifyContent={['center', 'center', 'flex-start']}
-                                    paddingTop={8}
-                                >
-                                    <Pagination currentURL={basePath} urls={pageUrls} />
-
-                                    {/*
-                                Our design doesn't call for a page size select. Show this element if you want
-                                to add one to your design.
-                            */}
-                                    <Select
-                                        display="none"
-                                        value={basePath}
-                                        onChange={({target}) => {
-                                            history.push(target.value)
-                                        }}
+                                {/* Infinite scroll sentinel + load-more indicator */}
+                                <Box
+                                    ref={sentinelRef}
+                                    aria-hidden="true"
+                                    height="1px"
+                                    width="100%"
+                                />
+                                {isLoadingMore && (
+                                    <Flex
+                                        justifyContent="center"
+                                        alignItems="center"
+                                        paddingY={8}
+                                        data-testid="sf-product-list-load-more"
+                                        role="status"
+                                        aria-live="polite"
                                     >
-                                        {limitUrls.map((href, index) => (
-                                            <option key={href} value={href}>
-                                                {DEFAULT_LIMIT_VALUES[index]}
-                                            </option>
-                                        ))}
-                                    </Select>
-                                </Flex>
+                                        <Spinner
+                                            thickness="3px"
+                                            speed="0.65s"
+                                            emptyColor="gray.200"
+                                            color="blue.600"
+                                            size="md"
+                                        />
+                                        <Text marginLeft={3} fontSize="sm" color="gray.600">
+                                            <FormattedMessage
+                                                defaultMessage="Loading more products..."
+                                                id="product_list.label.loading_more"
+                                            />
+                                        </Text>
+                                    </Flex>
+                                )}
+
+                                {/*
+                                    Our design doesn't call for a page size select. Show this element
+                                    if you want to add one to your design.
+                                */}
+                                <Select
+                                    display="none"
+                                    value={basePath}
+                                    onChange={({target}) => {
+                                        history.push(target.value)
+                                    }}
+                                >
+                                    {limitUrls.map((href, index) => (
+                                        <option key={href} value={href}>
+                                            {DEFAULT_LIMIT_VALUES[index]}
+                                        </option>
+                                    ))}
+                                </Select>
                             </>
                         )}
                     </Box>
