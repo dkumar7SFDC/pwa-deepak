@@ -7,3 +7,4 @@
 
 export * from './image-tile'
 export * from './image-with-text'
+export * from './main-banner'

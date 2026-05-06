@@ -12,16 +12,21 @@ import {Region, regionPropType} from '@salesforce/commerce-sdk-react/page-design
 /**
  * This layout component displays its children in a 1 x 1 grid on both mobile and desktop.
  *
+ * The SDK's `<Component>` renderer passes the entire parent component as the
+ * `component` prop. We forward it to `<Region>` along with the child region
+ * id — the modern SDK Region API requires `component+regionId` (or
+ * `page+regionId`); the legacy `<Region region={region} />` invocation is a
+ * no-op against the current `@salesforce/commerce-sdk-react` Region.
+ *
  * @param {componentProps} props
  * @param {regionType []} props.regions - The page designer regions for this component.
- * @param {object} props.data - The data for the component.
- * @param {string} props.typeId - A mapping of typeId's to react components representing the type.
+ * @param {object} props.component - The full Page Designer component descriptor (parent).
  * @returns {React.ReactElement} - Grid component.
  */
-export const MobileGrid1r1c = ({regions}) => (
+export const MobileGrid1r1c = ({regions, component}) => (
     <SimpleGrid className="mobile-1r-1c" columns={1}>
         {regions.map((region) => (
-            <Region key={region.id} region={region} />
+            <Region key={region.id} component={component} regionId={region.id} />
         ))}
     </SimpleGrid>
 )
@@ -29,8 +34,9 @@ export const MobileGrid1r1c = ({regions}) => (
 MobileGrid1r1c.displayName = 'MobileGrid1r1c'
 
 MobileGrid1r1c.propTypes = {
-    // Internally Provided
-    regions: PropTypes.arrayOf(regionPropType).isRequired
+    // Internally Provided by the SDK <Component> renderer.
+    regions: PropTypes.arrayOf(regionPropType).isRequired,
+    component: PropTypes.object.isRequired
 }
 
 export default MobileGrid1r1c

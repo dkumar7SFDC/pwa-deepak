@@ -31,6 +31,11 @@ import Section from '@salesforce/retail-react-app/app/components/section'
 import ProductScroller from '@salesforce/retail-react-app/app/components/product-scroller'
 import Island from '@salesforce/retail-react-app/app/components/island'
 
+// Page Designer "banner" page (main region only). Customer-group targeting
+// is enforced server-side by SCAPI; untargeted shoppers receive no page and
+// nothing renders.
+import PageDesignerMainRegion from '@salesforce/retail-react-app/app/components/page-designer-main-region'
+
 // Others
 import {getAssetUrl} from '@salesforce/pwa-kit-react-sdk/ssr/universal/utils'
 import {heroFeatures, features} from '@salesforce/retail-react-app/app/pages/home/data'
@@ -96,6 +101,8 @@ const Home = () => {
                 description="Commerce Cloud Retail React App"
                 keywords="Commerce Cloud, Retail React App, React Storefront"
             />
+
+            <PageDesignerMainRegion pageId="banner" marginBottom={6} />
 
             <Island hydrateOn={'visible'}>
                 <Hero

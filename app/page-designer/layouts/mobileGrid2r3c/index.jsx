@@ -19,10 +19,10 @@ import {Region, regionPropType} from '@salesforce/commerce-sdk-react/page-design
  * @param {string} props.typeId - A mapping of typeId's to react components representing the type.
  * @returns {React.ReactElement} - Grid component.
  */
-export const MobileGrid2r3c = ({regions}) => (
+export const MobileGrid2r3c = ({regions, component}) => (
     <SimpleGrid className="mobile-2r-3c" columns={{base: 3, sm: 6}} gridGap={4}>
         {regions.map((region) => (
-            <Region key={region.id} region={region} />
+            <Region key={region.id} component={component} regionId={region.id} />
         ))}
     </SimpleGrid>
 )
@@ -30,8 +30,9 @@ export const MobileGrid2r3c = ({regions}) => (
 MobileGrid2r3c.displayName = 'MobileGrid2r3c'
 
 MobileGrid2r3c.propTypes = {
-    // Internally Provided
-    regions: PropTypes.arrayOf(regionPropType).isRequired
+    // Internally Provided by the SDK <Component> renderer.
+    regions: PropTypes.arrayOf(regionPropType).isRequired,
+    component: PropTypes.object.isRequired
 }
 
 export default MobileGrid2r3c
