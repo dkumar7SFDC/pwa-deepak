@@ -1,12 +1,14 @@
 {
   "name": "client",
-  "hash": "c643e7552954579d47c2",
+  "hash": "5d333186fc55561c0b70",
   "publicPath": "/mobify/bundle/development/",
   "outputPath": "/Users/dkumar7/pwa-kit-starter-project/build",
   "assetsByChunkName": {
     "main": [
       "main.js",
-      "main.js.map"
+      "main.e33b8c279f9d7a732deb.hot-update.js",
+      "main.js.map",
+      "main.e33b8c279f9d7a732deb.hot-update.js.map"
     ],
     "pages-home": [
       "pages-home.js",
@@ -58,7 +60,9 @@
     ],
     "pages-product-list": [
       "pages-product-list.js",
-      "pages-product-list.js.map"
+      "pages-product-list.e33b8c279f9d7a732deb.hot-update.js",
+      "pages-product-list.js.map",
+      "pages-product-list.e33b8c279f9d7a732deb.hot-update.js.map"
     ],
     "pages-store-locator": [
       "pages-store-locator.js",
@@ -190,6 +194,31 @@
     },
     {
       "type": "asset",
+      "name": "pages-product-list.js",
+      "size": 248701,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "javascriptModule": false,
+        "related": {
+          "sourceMap": "pages-product-list.js.map"
+        }
+      },
+      "chunkNames": [
+        "pages-product-list"
+      ],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "filteredRelated": 1,
+      "chunks": [
+        "pages-product-list"
+      ],
+      "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
       "name": "pages-account.js",
       "size": 225544,
       "emitted": false,
@@ -210,31 +239,6 @@
       "filteredRelated": 1,
       "chunks": [
         "pages-account"
-      ],
-      "auxiliaryChunks": []
-    },
-    {
-      "type": "asset",
-      "name": "pages-product-list.js",
-      "size": 225535,
-      "emitted": false,
-      "comparedForEmit": false,
-      "cached": true,
-      "info": {
-        "javascriptModule": false,
-        "related": {
-          "sourceMap": "pages-product-list.js.map"
-        }
-      },
-      "chunkNames": [
-        "pages-product-list"
-      ],
-      "chunkIdHints": [],
-      "auxiliaryChunkNames": [],
-      "auxiliaryChunkIdHints": [],
-      "filteredRelated": 1,
-      "chunks": [
-        "pages-product-list"
       ],
       "auxiliaryChunks": []
     },
@@ -356,6 +360,33 @@
       "filteredRelated": 1,
       "chunks": [
         "pages-product-detail"
+      ],
+      "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
+      "name": "pages-product-list.e33b8c279f9d7a732deb.hot-update.js",
+      "size": 65086,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "hotModuleReplacement": true,
+        "immutable": true,
+        "fullhash": "e33b8c279f9d7a732deb",
+        "related": {
+          "sourceMap": "pages-product-list.e33b8c279f9d7a732deb.hot-update.js.map"
+        }
+      },
+      "chunkNames": [
+        "pages-product-list"
+      ],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "filteredRelated": 1,
+      "chunks": [
+        "pages-product-list"
       ],
       "auxiliaryChunks": []
     },
@@ -935,6 +966,33 @@
     },
     {
       "type": "asset",
+      "name": "main.e33b8c279f9d7a732deb.hot-update.js",
+      "size": 362,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "hotModuleReplacement": true,
+        "immutable": true,
+        "fullhash": "e33b8c279f9d7a732deb",
+        "related": {
+          "sourceMap": "main.e33b8c279f9d7a732deb.hot-update.js.map"
+        }
+      },
+      "chunkNames": [
+        "main"
+      ],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "filteredRelated": 1,
+      "chunks": [
+        "main"
+      ],
+      "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
       "name": "_1242.js",
       "size": 272,
       "emitted": false,
@@ -955,6 +1013,25 @@
         "_1242"
       ],
       "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
+      "name": "main.e33b8c279f9d7a732deb.hot-update.json",
+      "size": 49,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "hotModuleReplacement": true,
+        "immutable": true,
+        "fullhash": "e33b8c279f9d7a732deb"
+      },
+      "chunkNames": [],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "chunks": [],
+      "auxiliaryChunks": []
     }
   ],
   "namedChunkGroups": {
@@ -970,11 +1047,14 @@
         },
         {
           "name": "main.js"
+        },
+        {
+          "name": "main.e33b8c279f9d7a732deb.hot-update.js"
         }
       ],
       "filteredAssets": 0,
       "assetsSize": null,
-      "filteredAuxiliaryAssets": 2,
+      "filteredAuxiliaryAssets": 3,
       "auxiliaryAssetsSize": null,
       "children": {},
       "childAssets": {}
@@ -1303,11 +1383,14 @@
       "assets": [
         {
           "name": "pages-product-list.js"
+        },
+        {
+          "name": "pages-product-list.e33b8c279f9d7a732deb.hot-update.js"
         }
       ],
       "filteredAssets": 0,
       "assetsSize": null,
-      "filteredAuxiliaryAssets": 1,
+      "filteredAuxiliaryAssets": 2,
       "auxiliaryAssetsSize": null,
       "children": {},
       "childAssets": {}
@@ -1415,7 +1498,8 @@
     {
       "id": "main",
       "files": [
-        "main.js"
+        "main.js",
+        "main.e33b8c279f9d7a732deb.hot-update.js"
       ]
     },
     {
@@ -1547,7 +1631,8 @@
     {
       "id": "pages-product-list",
       "files": [
-        "pages-product-list.js"
+        "pages-product-list.js",
+        "pages-product-list.e33b8c279f9d7a732deb.hot-update.js"
       ]
     },
     {
