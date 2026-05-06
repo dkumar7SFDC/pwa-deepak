@@ -14,6 +14,7 @@ import {
     AspectRatio,
     Badge,
     Box,
+    Button,
     Skeleton as ChakraSkeleton,
     Text,
     Stack,
@@ -85,9 +86,12 @@ const ProductTile = (props) => {
     const {
         dynamicImageProps,
         enableFavourite = false,
+        enableAddToCart = false,
         imageViewType = PRODUCT_TILE_IMAGE_VIEW_TYPE,
         isFavourite,
         onFavouriteToggle,
+        onAddToCart,
+        isAddingToCart = false,
         product,
         selectableAttributeId = PRODUCT_TILE_SELECTABLE_ATTRIBUTE_ID,
         badgeDetails = PRODUCT_BADGE_DETAILS,
@@ -163,6 +167,45 @@ const ProductTile = (props) => {
     const priceData = useMemo(() => {
         return getPriceData(productWithFilteredVariants)
     }, [productWithFilteredVariants])
+
+    // Resolve the orderable productId to send to SCAPI when adding to cart from the tile.
+    // - Standard products: use `productId` directly.
+    // - Master products: prefer the variant matching the swatch the user picked, then fall back
+    //   to `representedProduct.id` (the orderable default returned by Shopper Search), then to
+    //   `productId` as a last resort.
+    // Returns `null` when we cannot confidently pick a single orderable variant (e.g. a master
+    // with multiple variation axes where only one is selected on the tile). In that case the
+    // PLP should hide/disable the inline add-to-cart and let the user pick options on the PDP.
+    const variationAxisCount = product?.variationAttributes?.length ?? 0
+    const addToCartProductId = useMemo(() => {
+        if (!isMasterVariant) {
+            return productId
+        }
+        const matchingVariant = variants?.find(
+            (v) => v.variationValues?.[selectableAttributeId] === selectableAttributeValue
+        )
+        if (variationAxisCount <= 1) {
+            return matchingVariant?.productId || representedProduct?.id || productId
+        }
+        return representedProduct?.id || null
+    }, [
+        isMasterVariant,
+        variants,
+        selectableAttributeId,
+        selectableAttributeValue,
+        representedProduct?.id,
+        productId,
+        variationAxisCount
+    ])
+
+    const isProductSet = !!product?.hitType?.includes('set') || !!product?.type?.set
+    const isProductBundle = !!product?.hitType?.includes('bundle') || !!product?.type?.bundle
+    const canAddToCartFromTile =
+        enableAddToCart &&
+        typeof onAddToCart === 'function' &&
+        !isProductSet &&
+        !isProductBundle &&
+        !!addToCartProductId
 
     // Retrieve product badges
     const filteredLabels = useMemo(() => {
@@ -308,6 +351,45 @@ const ProductTile = (props) => {
                     />
                 </Box>
             )}
+            {canAddToCartFromTile && (
+                <Button
+                    data-testid="product-tile-add-to-cart-button"
+                    width="full"
+                    marginTop={3}
+                    size="sm"
+                    variant="solid"
+                    colorScheme="blue"
+                    isLoading={isAddingToCart}
+                    loadingText={intl.formatMessage({
+                        id: 'product_tile.button.adding_to_cart',
+                        defaultMessage: 'Adding...'
+                    })}
+                    aria-label={intl.formatMessage(
+                        {
+                            id: 'product_tile.assistive_msg.add_to_cart',
+                            defaultMessage: 'Add {product} to cart'
+                        },
+                        {product: localizedProductName}
+                    )}
+                    onClick={(e) => {
+                        // Defensive: the button is rendered outside the product Link, but we still
+                        // stop propagation/prevent default so a wrapping element (e.g. an <Island>)
+                        // can never accidentally treat this click as navigation.
+                        e.preventDefault()
+                        e.stopPropagation()
+                        onAddToCart({
+                            product,
+                            productId: addToCartProductId,
+                            quantity: 1
+                        })
+                    }}
+                >
+                    {intl.formatMessage({
+                        id: 'product_tile.button.add_to_cart',
+                        defaultMessage: 'Add to Cart'
+                    })}
+                </Button>
+            )}
             {filteredLabels.size > 0 && (
                 <HStack {...styles.badgeGroup}>
                     {Array.from(filteredLabels.entries()).map(([label, colorScheme]) => (
@@ -370,6 +452,13 @@ ProductTile.propTypes = {
      */
     enableFavourite: PropTypes.bool,
     /**
+     * Enable a one-click "Add to Cart" button on the tile.
+     * Requires `onAddToCart` to be provided. The button is automatically hidden for
+     * product sets, bundles, and masters with multiple variation axes (where the user
+     * must pick options on the PDP).
+     */
+    enableAddToCart: PropTypes.bool,
+    /**
      * Display the product as a favourite.
      */
     isFavourite: PropTypes.bool,
@@ -378,6 +467,17 @@ ProductTile.propTypes = {
      * interacts with favourite icon/button.
      */
     onFavouriteToggle: PropTypes.func,
+    /**
+     * Callback fired when the inline "Add to Cart" button is clicked.
+     * Receives `{ product, productId, quantity }` where `productId` is the orderable
+     * variant id (or the standard product id) ready to be sent to SCAPI.
+     */
+    onAddToCart: PropTypes.func,
+    /**
+     * When true, the inline "Add to Cart" button shows a loading state and is disabled.
+     * The PLP should set this for the tile whose add-to-cart request is in flight.
+     */
+    isAddingToCart: PropTypes.bool,
     /**
      * The `viewType` of the image component. This defaults to 'large'.
      */

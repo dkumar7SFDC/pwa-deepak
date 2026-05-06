@@ -14,7 +14,8 @@ import {
     useCategory,
     useCustomerId,
     useProductSearch,
-    useShopperCustomersMutation
+    useShopperCustomersMutation,
+    useShopperBasketsV2MutationHelper as useShopperBasketsMutationHelper
 } from '@salesforce/commerce-sdk-react'
 import {useServerContext} from '@salesforce/pwa-kit-react-sdk/ssr/universal/hooks'
 
@@ -136,6 +137,7 @@ const ProductList = (props) => {
     /**************** Page State ****************/
     const [filtersLoading, setFiltersLoading] = useState(false)
     const [wishlistLoading, setWishlistLoading] = useState([])
+    const [addToCartLoading, setAddToCartLoading] = useState([])
     const [sortOpen, setSortOpen] = useState(false)
     const [searchByInventory, setSearchByInventory] = useState(null)
 
@@ -159,6 +161,11 @@ const ProductList = (props) => {
     const {mutateAsync: deleteCustomerProductListItem} = useShopperCustomersMutation(
         'deleteCustomerProductListItem'
     )
+
+    // SCAPI Shopper Baskets helper: transparently creates a basket if one doesn't exist yet
+    // (for guests and logged-in customers) and otherwise calls `addItemToBasket` on the
+    // current basket. This is the canonical way to add to cart in PWA Kit without a PDP round-trip.
+    const {addItemToNewOrExistingBasket} = useShopperBasketsMutationHelper()
 
     /**************** Query Actions ****************/
     // _refine is an invalid param for useProductSearch, we don't want to pass it to API call
@@ -416,6 +423,81 @@ const ProductList = (props) => {
                 }
             }
         )
+    }
+
+    // Add a product to the basket directly from the PLP tile via SCAPI Shopper Baskets.
+    // - No page navigation occurs.
+    // - `productId` is resolved by the tile to the orderable variant (or standard product) id.
+    // - The helper creates a basket on demand for both guests and logged-in customers.
+    // - Per-tile loading state is tracked by the hit-level `product.productId` (the master id
+    //   for variation products) so the spinner stays anchored to the tile the user clicked,
+    //   regardless of which swatch/variant they had selected.
+    const handleAddToCartFromTile = async ({product, productId, quantity = 1}) => {
+        if (!productId) return
+        const tileKey = product?.productId || productId
+        if (addToCartLoading.includes(tileKey)) return
+
+        setAddToCartLoading((prev) => [...prev, tileKey])
+        try {
+            await addItemToNewOrExistingBasket([
+                {
+                    productId,
+                    price: product?.price,
+                    quantity
+                }
+            ])
+
+            try {
+                einstein.sendAddToCart([
+                    {
+                        product,
+                        productId,
+                        price: product?.price,
+                        quantity
+                    }
+                ])
+            } catch (err) {
+                logger.error('Einstein sendAddToCart error', {
+                    namespace: 'ProductList.handleAddToCartFromTile',
+                    additionalProperties: {error: err, productId}
+                })
+            }
+
+            toast({
+                title: formatMessage(
+                    {
+                        id: 'product_list.info.added_to_cart',
+                        defaultMessage:
+                            '{quantity} {quantity, plural, one {item} other {items}} added to cart'
+                    },
+                    {quantity}
+                ),
+                status: 'success',
+                action: (
+                    // Chakra's ToastManager renders via portal *outside* the intl provider,
+                    // so we MUST resolve the label to a plain string here with `formatMessage`
+                    // (rather than rendering <FormattedMessage>, which would throw inside the
+                    // portal and crash the page). This matches the wishlist toast pattern above.
+                    <Button variant="link" onClick={() => navigate('/cart')}>
+                        {formatMessage({
+                            id: 'product_list.toast.action.view_cart',
+                            defaultMessage: 'View Cart'
+                        })}
+                    </Button>
+                )
+            })
+        } catch (error) {
+            logger.error('Add to cart from PLP failed', {
+                namespace: 'ProductList.handleAddToCartFromTile',
+                additionalProperties: {error, productId}
+            })
+            toast({
+                title: formatMessage(API_ERROR_MESSAGE),
+                status: 'error'
+            })
+        } finally {
+            setAddToCartLoading((prev) => prev.filter((id) => id !== tileKey))
+        }
     }
 
     // Toggles filter on and off
@@ -766,7 +848,11 @@ const ProductList = (props) => {
                                                               data-testid={`sf-product-tile-${productSearchItem.productId}`}
                                                               product={productSearchItem}
                                                               enableFavourite={true}
+                                                              enableAddToCart={true}
                                                               isFavourite={isInWishlist}
+                                                              isAddingToCart={addToCartLoading.includes(
+                                                                  productSearchItem.productId
+                                                              )}
                                                               isRefreshingData={
                                                                   isRefetching && isFetched
                                                               }
@@ -775,6 +861,9 @@ const ProductList = (props) => {
                                                               }
                                                               selectableAttributeId={
                                                                   PRODUCT_LIST_SELECTABLE_ATTRIBUTE_ID
+                                                              }
+                                                              onAddToCart={
+                                                                  handleAddToCartFromTile
                                                               }
                                                               onClick={() => {
                                                                   if (searchQuery) {
