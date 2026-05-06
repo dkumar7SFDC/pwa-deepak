@@ -76,6 +76,10 @@ import useEinstein from '@salesforce/retail-react-app/app/hooks/use-einstein'
 import useDataCloud from '@salesforce/retail-react-app/app/hooks/use-datacloud'
 import useActiveData from '@salesforce/retail-react-app/app/hooks/use-active-data'
 import useIntersectionObserver from '@salesforce/retail-react-app/app/hooks/use-intersection-observer'
+import {useZipCode} from '@salesforce/retail-react-app/app/hooks/use-zip-code'
+
+// ZIP-code-based product filtering (SCAPI custom attribute c_zipCodes).
+import ZipCodeFilter from '@salesforce/retail-react-app/app/components/zip-code-filter'
 
 // Others
 import {HTTPNotFound, HTTPError} from '@salesforce/pwa-kit-react-sdk/ssr/universal/errors'
@@ -135,6 +139,11 @@ const ProductList = (props) => {
     const [sortOpen, setSortOpen] = useState(false)
     const [searchByInventory, setSearchByInventory] = useState(null)
 
+    // ZIP-code refinement state (persisted in localStorage under `userZip`).
+    // The hook hydrates from storage after the first client render so that
+    // SSR and CSR markup stay aligned.
+    const [zip, setZip, clearZip] = useZipCode()
+
     const urlParams = new URLSearchParams(location.search)
     let searchQuery = urlParams.get('q')
     const isSearch = !!searchQuery
@@ -155,7 +164,14 @@ const ProductList = (props) => {
     // _refine is an invalid param for useProductSearch, we don't want to pass it to API call
     const {_refine, ...restOfParams} = searchParams
 
-    const refine = searchByInventory ? [..._refine, `ilids=${searchByInventory}`] : _refine
+    // Layer optional refinements on top of the URL-driven `_refine` array.
+    // Order: store-inventory filter, then ZIP-code filter (custom attribute
+    // c_zipCodes — note the plural; matches the BM attribute id).
+    // SCAPI accepts each entry as a `key=value` string.
+    const refineWithInventory = searchByInventory
+        ? [..._refine, `ilids=${searchByInventory}`]
+        : _refine
+    const refine = zip ? [...refineWithInventory, `c_zipCodes=${zip}`] : refineWithInventory
 
     /**************** Infinite Scroll State ****************/
     // Internal offset that drives the product search request. We override the URL `offset`
@@ -539,6 +555,17 @@ const ProductList = (props) => {
                 <AbovePageHeader />
                 <PageDesignerPromotionalBanner />
 
+                {/* ZIP-code refinement (persisted in localStorage as `userZip`).
+                    Updating the value re-runs the SCAPI search via the
+                    refine[] dependency in the `useProductSearch` call above. */}
+                <Box marginBottom={4}>
+                    <ZipCodeFilter
+                        value={zip}
+                        onChange={(next) => setZip(next)}
+                        onClear={() => clearZip()}
+                    />
+                </Box>
+
                 {/* Header */}
                 <Stack
                     display={{base: 'none', lg: 'flex'}}
@@ -668,7 +695,41 @@ const ProductList = (props) => {
                         </Island>
                     </Stack>
                     <Box>
-                        {showNoResults ? (
+                        {showNoResults && zip ? (
+                            <Flex
+                                data-testid="sf-product-list-no-zip-results"
+                                direction="column"
+                                alignItems="center"
+                                textAlign="center"
+                                paddingTop={28}
+                                paddingBottom={28}
+                                gap={4}
+                                role="status"
+                                aria-live="polite"
+                            >
+                                <Heading as="h2" fontSize={['lg', 'lg', 'xl', '2xl']}>
+                                    <FormattedMessage
+                                        id="product_list.no_results.zip"
+                                        defaultMessage="No products available in your area"
+                                    />
+                                </Heading>
+                                <Text color="gray.600" maxWidth="md">
+                                    <FormattedMessage
+                                        id="product_list.no_results.zip_help"
+                                        defaultMessage="We couldn’t find any products that ship to {zip}. Try a different ZIP code or clear the filter to see all products."
+                                        values={{zip}}
+                                    />
+                                </Text>
+                                <Stack direction={{base: 'column', sm: 'row'}} spacing={3}>
+                                    <Button onClick={() => clearZip()} variant="outline">
+                                        <FormattedMessage
+                                            id="product_list.no_results.zip.clear"
+                                            defaultMessage="Clear ZIP filter"
+                                        />
+                                    </Button>
+                                </Stack>
+                            </Flex>
+                        ) : showNoResults ? (
                             <EmptySearchResults searchQuery={searchQuery} category={category} />
                         ) : (
                             <>
