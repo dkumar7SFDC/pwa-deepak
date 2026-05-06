@@ -33,6 +33,9 @@ export function initializeRegistry() {
     registry.registerImporter('commerce_assets.productTile', () =>
         import('./assets/image-with-text')
     )
+    registry.registerImporter('commerce_assets.mainBanner', () =>
+        import('./assets/main-banner')
+    )
 
     // Commerce Layouts - Layout components
     registry.registerImporter('commerce_layouts.mobileGrid1r1c', () =>
