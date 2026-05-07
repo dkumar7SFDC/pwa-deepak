@@ -91,6 +91,7 @@ import {
 } from '@salesforce/retail-react-app/app/utils/shipment-utils'
 import {useSelectedStore} from '@salesforce/retail-react-app/app/hooks/use-selected-store'
 import {useMultiship} from '@salesforce/retail-react-app/app/hooks/use-multiship'
+import {sortBasketItemsByRecency} from '@salesforce/retail-react-app/app/utils/cart-utils'
 
 const DEBOUNCE_WAIT = 750
 
@@ -332,6 +333,16 @@ const Cart = () => {
     const updateItemsInBasketMutation = useShopperBasketsMutation('updateItemsInBasket')
     const removeItemFromBasketMutation = useShopperBasketsMutation('removeItemFromBasket')
     /*****************Basket Mutation************************/
+
+    // Display order: most recently added items first.
+    // Sorting is applied here once and propagates through `shipmentData` (filter
+    // preserves order) so both the grouped and simple cart layouts render in the
+    // same "newest-first" order. See `sortBasketItemsByRecency` for the field
+    // fallback chain (creationDate -> lastModified -> position -> array order).
+    const sortedProductItems = useMemo(
+        () => sortBasketItemsByRecency(basket?.productItems),
+        [basket?.productItems]
+    )
 
     const [selectedItem, setSelectedItem] = useState(undefined)
     const [localQuantity, setLocalQuantity] = useState({})
@@ -887,9 +898,10 @@ const Cart = () => {
             const storeId = shipment?.c_fromStoreId
             const store = storeData?.data?.find((store) => store.id === storeId)
 
-            // Filter products for this shipment
+            // Filter products for this shipment from the recency-sorted list so that
+            // newest-added items render first within each shipment group.
             const shipmentProducts =
-                basket.productItems?.filter(
+                sortedProductItems?.filter(
                     (productItem) => productItem.shipmentId === shipment.shipmentId
                 ) || []
 
@@ -953,7 +965,7 @@ const Cart = () => {
         }
 
         return result
-    }, [basket?.shipments, basket?.productItems, storeData])
+    }, [basket?.shipments, sortedProductItems, storeData])
 
     // Helper function to get shipment info for a product
     const getShipmentInfoForProduct = (productItem) => {
