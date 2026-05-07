@@ -1,12 +1,14 @@
 {
   "name": "client",
-  "hash": "73c9d58b268de2e33773",
+  "hash": "f1a07cc658906efbca04",
   "publicPath": "/mobify/bundle/development/",
   "outputPath": "/Users/dkumar7/pwa-kit-starter-project/build",
   "assetsByChunkName": {
     "main": [
       "main.js",
-      "main.js.map"
+      "main.6d5c027fdd9499186354.hot-update.js",
+      "main.js.map",
+      "main.6d5c027fdd9499186354.hot-update.js.map"
     ],
     "pages-home": [
       "pages-home.js",
@@ -30,7 +32,9 @@
     ],
     "pages-cart": [
       "pages-cart.js",
-      "pages-cart.js.map"
+      "pages-cart.6d5c027fdd9499186354.hot-update.js",
+      "pages-cart.js.map",
+      "pages-cart.6d5c027fdd9499186354.hot-update.js.map"
     ],
     "pages-checkout": [
       "pages-checkout.js",
@@ -116,7 +120,7 @@
     {
       "type": "asset",
       "name": "main.js",
-      "size": 2348476,
+      "size": 2348867,
       "emitted": false,
       "comparedForEmit": false,
       "cached": true,
@@ -241,7 +245,7 @@
     {
       "type": "asset",
       "name": "pages-cart.js",
-      "size": 180615,
+      "size": 186181,
       "emitted": false,
       "comparedForEmit": false,
       "cached": true,
@@ -308,6 +312,33 @@
       "filteredRelated": 1,
       "chunks": [
         "pages-confirmation"
+      ],
+      "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
+      "name": "pages-cart.6d5c027fdd9499186354.hot-update.js",
+      "size": 87888,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "hotModuleReplacement": true,
+        "immutable": true,
+        "fullhash": "6d5c027fdd9499186354",
+        "related": {
+          "sourceMap": "pages-cart.6d5c027fdd9499186354.hot-update.js.map"
+        }
+      },
+      "chunkNames": [
+        "pages-cart"
+      ],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "filteredRelated": 1,
+      "chunks": [
+        "pages-cart"
       ],
       "auxiliaryChunks": []
     },
@@ -981,6 +1012,33 @@
     },
     {
       "type": "asset",
+      "name": "main.6d5c027fdd9499186354.hot-update.js",
+      "size": 362,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "hotModuleReplacement": true,
+        "immutable": true,
+        "fullhash": "6d5c027fdd9499186354",
+        "related": {
+          "sourceMap": "main.6d5c027fdd9499186354.hot-update.js.map"
+        }
+      },
+      "chunkNames": [
+        "main"
+      ],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "filteredRelated": 1,
+      "chunks": [
+        "main"
+      ],
+      "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
       "name": "_1242.js",
       "size": 272,
       "emitted": false,
@@ -1001,6 +1059,25 @@
         "_1242"
       ],
       "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
+      "name": "main.6d5c027fdd9499186354.hot-update.json",
+      "size": 41,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "hotModuleReplacement": true,
+        "immutable": true,
+        "fullhash": "6d5c027fdd9499186354"
+      },
+      "chunkNames": [],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "chunks": [],
+      "auxiliaryChunks": []
     }
   ],
   "namedChunkGroups": {
@@ -1016,11 +1093,14 @@
         },
         {
           "name": "main.js"
+        },
+        {
+          "name": "main.6d5c027fdd9499186354.hot-update.js"
         }
       ],
       "filteredAssets": 0,
       "assetsSize": null,
-      "filteredAuxiliaryAssets": 2,
+      "filteredAuxiliaryAssets": 3,
       "auxiliaryAssetsSize": null,
       "children": {},
       "childAssets": {}
@@ -1170,11 +1250,14 @@
         },
         {
           "name": "pages-cart.js"
+        },
+        {
+          "name": "pages-cart.6d5c027fdd9499186354.hot-update.js"
         }
       ],
       "filteredAssets": 0,
       "assetsSize": null,
-      "filteredAuxiliaryAssets": 6,
+      "filteredAuxiliaryAssets": 7,
       "auxiliaryAssetsSize": null,
       "children": {},
       "childAssets": {}
@@ -1469,7 +1552,8 @@
     {
       "id": "main",
       "files": [
-        "main.js"
+        "main.js",
+        "main.6d5c027fdd9499186354.hot-update.js"
       ]
     },
     {
@@ -1565,7 +1649,8 @@
     {
       "id": "pages-cart",
       "files": [
-        "pages-cart.js"
+        "pages-cart.js",
+        "pages-cart.6d5c027fdd9499186354.hot-update.js"
       ]
     },
     {
