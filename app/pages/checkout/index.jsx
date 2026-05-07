@@ -51,6 +51,7 @@ import {
     useSFPayments
 } from '@salesforce/retail-react-app/app/hooks/use-sf-payments'
 import {GoogleAPIProvider} from '@salesforce/retail-react-app/app/pages/checkout/util/google-api-provider'
+import StripeProvider from '@salesforce/retail-react-app/app/components/payment/stripe-provider'
 
 let persistedPaymentsError = null
 
@@ -341,7 +342,18 @@ const CheckoutContainer = () => {
         <CheckoutProvider>
             {isDeletingUnavailableItem && <LoadingSpinner wrapperStyles={{position: 'fixed'}} />}
             <GoogleAPIProvider>
-                <Checkout />
+                {/*
+                 * StripeProvider is a no-op when no publishable key is
+                 * configured (see config/default.js -> app.stripe), so the
+                 * checkout still renders the legacy payment flow on
+                 * environments without Stripe. When configured, this wrapper
+                 * makes Stripe Elements available to the payment step only —
+                 * we deliberately don't lift it into AppConfig so the Stripe
+                 * SDK isn't downloaded on non-checkout pages.
+                 */}
+                <StripeProvider>
+                    <Checkout />
+                </StripeProvider>
             </GoogleAPIProvider>
             <UnavailableProductConfirmationModal
                 productItems={basket?.productItems}

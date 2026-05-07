@@ -149,6 +149,17 @@ module.exports = {
         // Google Cloud api config
         googleCloudAPI: {
             apiKey: process.env.GOOGLE_CLOUD_API_KEY
+        },
+        // Stripe (client-side payment integration) configuration.
+        // - `publishableKey` is the Stripe pk_live_/pk_test_ key. It's safe to ship
+        //   to the browser (it can only create tokens / payment methods), but the
+        //   *secret key* (sk_live_/sk_test_) MUST NEVER be added to this file or
+        //   any client-side bundle. Set the publishable key via the
+        //   `STRIPE_PUBLIC_KEY` env var so test/prod keys aren't committed.
+        // - When `publishableKey` is empty, the storefront falls back to the
+        //   non-Stripe legacy payment form.
+        stripe: {
+            publishableKey: process.env.STRIPE_PUBLIC_KEY || ''
         }
     },
     // This list contains server-side only libraries that you don't want to be compiled by webpack
