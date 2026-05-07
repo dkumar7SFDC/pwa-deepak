@@ -1,14 +1,14 @@
 {
   "name": "client",
-  "hash": "f1a07cc658906efbca04",
+  "hash": "a04699517d15b4d9957a",
   "publicPath": "/mobify/bundle/development/",
   "outputPath": "/Users/dkumar7/pwa-kit-starter-project/build",
   "assetsByChunkName": {
     "main": [
       "main.js",
-      "main.6d5c027fdd9499186354.hot-update.js",
+      "main.877be4556bfaa534a6f7.hot-update.js",
       "main.js.map",
-      "main.6d5c027fdd9499186354.hot-update.js.map"
+      "main.877be4556bfaa534a6f7.hot-update.js.map"
     ],
     "pages-home": [
       "pages-home.js",
@@ -32,9 +32,9 @@
     ],
     "pages-cart": [
       "pages-cart.js",
-      "pages-cart.6d5c027fdd9499186354.hot-update.js",
+      "pages-cart.877be4556bfaa534a6f7.hot-update.js",
       "pages-cart.js.map",
-      "pages-cart.6d5c027fdd9499186354.hot-update.js.map"
+      "pages-cart.877be4556bfaa534a6f7.hot-update.js.map"
     ],
     "pages-checkout": [
       "pages-checkout.js",
@@ -219,6 +219,31 @@
     },
     {
       "type": "asset",
+      "name": "pages-cart.js",
+      "size": 192203,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "javascriptModule": false,
+        "related": {
+          "sourceMap": "pages-cart.js.map"
+        }
+      },
+      "chunkNames": [
+        "pages-cart"
+      ],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "filteredRelated": 1,
+      "chunks": [
+        "pages-cart"
+      ],
+      "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
       "name": "pages-product-list.js",
       "size": 189118,
       "emitted": false,
@@ -239,31 +264,6 @@
       "filteredRelated": 1,
       "chunks": [
         "pages-product-list"
-      ],
-      "auxiliaryChunks": []
-    },
-    {
-      "type": "asset",
-      "name": "pages-cart.js",
-      "size": 186181,
-      "emitted": false,
-      "comparedForEmit": false,
-      "cached": true,
-      "info": {
-        "javascriptModule": false,
-        "related": {
-          "sourceMap": "pages-cart.js.map"
-        }
-      },
-      "chunkNames": [
-        "pages-cart"
-      ],
-      "chunkIdHints": [],
-      "auxiliaryChunkNames": [],
-      "auxiliaryChunkIdHints": [],
-      "filteredRelated": 1,
-      "chunks": [
-        "pages-cart"
       ],
       "auxiliaryChunks": []
     },
@@ -317,17 +317,17 @@
     },
     {
       "type": "asset",
-      "name": "pages-cart.6d5c027fdd9499186354.hot-update.js",
-      "size": 87888,
+      "name": "pages-cart.877be4556bfaa534a6f7.hot-update.js",
+      "size": 93910,
       "emitted": false,
       "comparedForEmit": false,
       "cached": true,
       "info": {
         "hotModuleReplacement": true,
         "immutable": true,
-        "fullhash": "6d5c027fdd9499186354",
+        "fullhash": "877be4556bfaa534a6f7",
         "related": {
-          "sourceMap": "pages-cart.6d5c027fdd9499186354.hot-update.js.map"
+          "sourceMap": "pages-cart.877be4556bfaa534a6f7.hot-update.js.map"
         }
       },
       "chunkNames": [
@@ -1012,7 +1012,7 @@
     },
     {
       "type": "asset",
-      "name": "main.6d5c027fdd9499186354.hot-update.js",
+      "name": "main.877be4556bfaa534a6f7.hot-update.js",
       "size": 362,
       "emitted": false,
       "comparedForEmit": false,
@@ -1020,9 +1020,9 @@
       "info": {
         "hotModuleReplacement": true,
         "immutable": true,
-        "fullhash": "6d5c027fdd9499186354",
+        "fullhash": "877be4556bfaa534a6f7",
         "related": {
-          "sourceMap": "main.6d5c027fdd9499186354.hot-update.js.map"
+          "sourceMap": "main.877be4556bfaa534a6f7.hot-update.js.map"
         }
       },
       "chunkNames": [
@@ -1062,7 +1062,7 @@
     },
     {
       "type": "asset",
-      "name": "main.6d5c027fdd9499186354.hot-update.json",
+      "name": "main.877be4556bfaa534a6f7.hot-update.json",
       "size": 41,
       "emitted": false,
       "comparedForEmit": false,
@@ -1070,7 +1070,7 @@
       "info": {
         "hotModuleReplacement": true,
         "immutable": true,
-        "fullhash": "6d5c027fdd9499186354"
+        "fullhash": "877be4556bfaa534a6f7"
       },
       "chunkNames": [],
       "chunkIdHints": [],
@@ -1095,7 +1095,7 @@
           "name": "main.js"
         },
         {
-          "name": "main.6d5c027fdd9499186354.hot-update.js"
+          "name": "main.877be4556bfaa534a6f7.hot-update.js"
         }
       ],
       "filteredAssets": 0,
@@ -1252,7 +1252,7 @@
           "name": "pages-cart.js"
         },
         {
-          "name": "pages-cart.6d5c027fdd9499186354.hot-update.js"
+          "name": "pages-cart.877be4556bfaa534a6f7.hot-update.js"
         }
       ],
       "filteredAssets": 0,
@@ -1553,7 +1553,7 @@
       "id": "main",
       "files": [
         "main.js",
-        "main.6d5c027fdd9499186354.hot-update.js"
+        "main.877be4556bfaa534a6f7.hot-update.js"
       ]
     },
     {
@@ -1650,7 +1650,7 @@
       "id": "pages-cart",
       "files": [
         "pages-cart.js",
-        "pages-cart.6d5c027fdd9499186354.hot-update.js"
+        "pages-cart.877be4556bfaa534a6f7.hot-update.js"
       ]
     },
     {
