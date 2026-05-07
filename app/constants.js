@@ -135,6 +135,11 @@ export const TOAST_MESSAGE_REMOVED_ITEM_FROM_CART = defineMessage({
     id: 'cart.info.removed_from_cart'
 })
 
+export const TOAST_MESSAGE_REMOVED_ALL_ITEMS_FROM_CART = defineMessage({
+    defaultMessage: 'All items have been removed from your cart',
+    id: 'cart.info.removed_all_items_from_cart'
+})
+
 export const TOAST_ACTION_VIEW_WISHLIST = defineMessage({
     defaultMessage: 'View',
     id: 'global.link.added_to_wishlist.view_wishlist'

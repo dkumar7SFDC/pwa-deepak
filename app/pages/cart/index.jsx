@@ -5,12 +5,13 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import React, {useState, useMemo, useEffect} from 'react'
-import {FormattedMessage, useIntl} from 'react-intl'
+import {defineMessage, FormattedMessage, useIntl} from 'react-intl'
 
 // Chakra Components
 import {
     Box,
     Button,
+    Flex,
     Stack,
     Grid,
     GridItem,
@@ -64,6 +65,7 @@ import {
     TOAST_ACTION_VIEW_WISHLIST,
     TOAST_MESSAGE_ADDED_TO_WISHLIST,
     TOAST_MESSAGE_REMOVED_ITEM_FROM_CART,
+    TOAST_MESSAGE_REMOVED_ALL_ITEMS_FROM_CART,
     TOAST_MESSAGE_ALREADY_IN_WISHLIST,
     TOAST_MESSAGE_STORE_INSUFFICIENT_INVENTORY,
     STORE_LOCATOR_IS_ENABLED
@@ -91,6 +93,33 @@ import {useSelectedStore} from '@salesforce/retail-react-app/app/hooks/use-selec
 import {useMultiship} from '@salesforce/retail-react-app/app/hooks/use-multiship'
 
 const DEBOUNCE_WAIT = 750
+
+export const REMOVE_ALL_CART_ITEMS_CONFIRMATION_DIALOG_CONFIG = {
+    dialogTitle: defineMessage({
+        defaultMessage: 'Remove All Items',
+        id: 'confirmation_modal.remove_all_cart_items.title.confirm_remove'
+    }),
+    confirmationMessage: defineMessage({
+        defaultMessage: 'Are you sure you want to remove all items from your cart?',
+        id: 'confirmation_modal.remove_all_cart_items.message.sure_to_remove'
+    }),
+    primaryActionLabel: defineMessage({
+        defaultMessage: 'Yes, remove all',
+        id: 'confirmation_modal.remove_all_cart_items.action.yes'
+    }),
+    primaryActionAriaLabel: defineMessage({
+        defaultMessage: 'Yes, remove all items from cart',
+        id: 'confirmation_modal.remove_all_cart_items.assistive_msg.yes'
+    }),
+    alternateActionLabel: defineMessage({
+        defaultMessage: 'No, keep items',
+        id: 'confirmation_modal.remove_all_cart_items.action.no'
+    }),
+    alternateActionAriaLabel: defineMessage({
+        defaultMessage: 'No, keep items in cart',
+        id: 'confirmation_modal.remove_all_cart_items.assistive_msg.no'
+    })
+}
 
 const Cart = () => {
     const {data: basket, isLoading, derivedData} = useCurrentBasket()
@@ -309,12 +338,14 @@ const Cart = () => {
     const [localIsGiftItems, setLocalIsGiftItems] = useState({})
     const [isCartItemLoading, setCartItemLoading] = useState(false)
     const [isProcessingShippingMethods, setIsProcessingShippingMethods] = useState(false)
+    const [isRemovingAll, setIsRemovingAll] = useState(false)
 
     const {isOpen, onOpen, onClose} = useDisclosure()
     const {formatMessage} = useIntl()
     const toast = useToast()
     const navigate = useNavigation()
     const modalProps = useDisclosure()
+    const removeAllModalProps = useDisclosure()
     const storeLocatorModal = useStoreLocatorModal()
 
     // Custom handler for opening store locator from cart's "Change Store" button
@@ -808,6 +839,40 @@ const Cart = () => {
             )
         }
     }
+
+    /***************************** Remove All Items from basket **************************/
+    // Empties the entire basket by removing every product line item via SCAPI.
+    // Removals are awaited sequentially to avoid concurrent basket-version (ETag) conflicts
+    // that can happen when multiple removeItemFromBasket calls race in parallel.
+    const handleRemoveAllItems = async () => {
+        const items = basket?.productItems || []
+        if (!basket?.basketId || items.length === 0) {
+            return
+        }
+
+        setIsRemovingAll(true)
+        try {
+            for (const item of items) {
+                await removeItemFromBasketMutation.mutateAsync({
+                    parameters: {
+                        basketId: basket.basketId,
+                        itemId: item.itemId
+                    }
+                })
+            }
+
+            toast({
+                title: formatMessage(TOAST_MESSAGE_REMOVED_ALL_ITEMS_FROM_CART),
+                status: 'success'
+            })
+        } catch (error) {
+            console.error('Failed to remove all items from cart:', error)
+            showError()
+        } finally {
+            setIsRemovingAll(false)
+        }
+    }
+    /***************************** Remove All Items from basket **************************/
 
     // Create shipment-specific data, but group all qualifying products together for bonus product grouping
     const shipmentData = useMemo(() => {
@@ -1396,6 +1461,31 @@ const Cart = () => {
                                         </Box>
                                     ))}
                                 </Stack>
+                                <Flex justifyContent="flex-end" mt={6}>
+                                    <Button
+                                        variant="outline"
+                                        colorScheme="red"
+                                        onClick={removeAllModalProps.onOpen}
+                                        isLoading={isRemovingAll}
+                                        loadingText={formatMessage({
+                                            defaultMessage: 'Removing...',
+                                            id: 'cart.button.removing_all_items'
+                                        })}
+                                        isDisabled={
+                                            isRemovingAll || !basket?.productItems?.length
+                                        }
+                                        aria-label={formatMessage({
+                                            defaultMessage: 'Remove all items from cart',
+                                            id: 'cart.button.assistive_msg.remove_all_items'
+                                        })}
+                                        data-testid="sf-cart-remove-all-button"
+                                    >
+                                        <FormattedMessage
+                                            defaultMessage="Remove All Items"
+                                            id="cart.button.remove_all_items"
+                                        />
+                                    </Button>
+                                </Flex>
                                 <Box>
                                     {isOpen && !selectedItem.bundledProductItems && (
                                         <ProductViewModal
@@ -1486,6 +1576,13 @@ const Cart = () => {
                 }}
                 onAlternateAction={() => {}}
                 {...modalProps}
+            />
+
+            <ConfirmationModal
+                {...REMOVE_ALL_CART_ITEMS_CONFIRMATION_DIALOG_CONFIG}
+                onPrimaryAction={handleRemoveAllItems}
+                onAlternateAction={() => {}}
+                {...removeAllModalProps}
             />
 
             <UnavailableProductConfirmationModal
