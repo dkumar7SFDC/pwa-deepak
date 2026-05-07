@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 import React, {useEffect} from 'react'
-import {FormattedMessage, FormattedNumber, useIntl} from 'react-intl'
+import {FormattedDate, FormattedMessage, FormattedNumber, useIntl} from 'react-intl'
 import {
     Box,
     Button,
@@ -34,6 +34,9 @@ import PropTypes from 'prop-types'
 
 import ShippingProductCards from '@salesforce/retail-react-app/app/pages/checkout/partials/shipping-product-cards'
 import ShippingMethodOptions from '@salesforce/retail-react-app/app/pages/checkout/partials/shipping-method-options'
+import PreferredShippingDate, {
+    PREFERRED_SHIPPING_DATE_ATTR
+} from '@salesforce/retail-react-app/app/pages/checkout/partials/preferred-shipping-date'
 
 // Component to handle combined product cards and shipping options for multiship
 const MultiAddressShipmentMethod = ({shipment, basketId, currency, control, basket}) => {
@@ -85,6 +88,9 @@ const MultiAddressShipmentMethod = ({shipment, basketId, currency, control, bask
                         currency={currency}
                         control={control}
                     />
+
+                    {/* Preferred Delivery Date */}
+                    <PreferredShippingDate basketId={basketId} shipment={shipment} />
                 </VStack>
             </Box>
         </VStack>
@@ -310,9 +316,10 @@ export default function ShippingMethods() {
                     <Stack spacing={6}>
                         {/* Dynamically create shipping method options for each shipment */}
                         {deliveryShipments.map((shipment) => (
-                            <Box key={shipment.shipmentId}>
+                            <Stack key={shipment.shipmentId} spacing={4}>
                                 {hasMultipleDeliveryShipments ? (
                                     // Multiship: Show both product cards and shipping options
+                                    // (the date picker lives inside the shipment box)
                                     <MultiAddressShipmentMethod
                                         shipment={shipment}
                                         basketId={basket.basketId}
@@ -321,15 +328,22 @@ export default function ShippingMethods() {
                                         basket={basket}
                                     />
                                 ) : (
-                                    // Single ship: Show only shipping options
-                                    <ShippingMethodOptions
-                                        shipment={shipment}
-                                        basketId={basket.basketId}
-                                        currency={currency}
-                                        control={form.control}
-                                    />
+                                    // Single ship: Show only shipping options + the
+                                    // preferred-date picker as a sibling block.
+                                    <>
+                                        <ShippingMethodOptions
+                                            shipment={shipment}
+                                            basketId={basket.basketId}
+                                            currency={currency}
+                                            control={form.control}
+                                        />
+                                        <PreferredShippingDate
+                                            basketId={basket.basketId}
+                                            shipment={shipment}
+                                        />
+                                    </>
                                 )}
-                            </Box>
+                            </Stack>
                         ))}
 
                         <Box>
@@ -372,6 +386,28 @@ export default function ShippingMethods() {
                                     </Text>
                                 </>
                             )}
+                            {deliveryShipments[0]?.[PREFERRED_SHIPPING_DATE_ATTR] && (
+                                <Text fontSize="sm" color="gray.700" mt={1}>
+                                    <FormattedMessage
+                                        defaultMessage="Preferred delivery date: {date}"
+                                        id="shipping_options.summary.preferred_delivery_date"
+                                        values={{
+                                            date: (
+                                                <FormattedDate
+                                                    value={
+                                                        deliveryShipments[0][
+                                                            PREFERRED_SHIPPING_DATE_ATTR
+                                                        ]
+                                                    }
+                                                    year="numeric"
+                                                    month="long"
+                                                    day="numeric"
+                                                />
+                                            )
+                                        }}
+                                    />
+                                </Text>
+                            )}
                         </Box>
                     ) : (
                         // Multiple shipments summary
@@ -379,6 +415,7 @@ export default function ShippingMethods() {
                             {deliveryShipments.map((shipment) => {
                                 // Use shipment.shippingTotal instead of looping on shippingItems to include all costs (base _ promotions + surcharges + other fees)
                                 const itemCost = shipment.shippingTotal || 0
+                                const preferredDate = shipment[PREFERRED_SHIPPING_DATE_ATTR]
                                 return (
                                     <Box key={shipment.shipmentId}>
                                         <Flex justify="space-between" w="full">
@@ -399,6 +436,24 @@ export default function ShippingMethods() {
                                                                 'No shipping method selected',
                                                             id: 'shipping_options.label.no_method_selected'
                                                         })}
+                                                    </Text>
+                                                )}
+                                                {preferredDate && (
+                                                    <Text fontSize="sm" color="gray.700" mt={1}>
+                                                        <FormattedMessage
+                                                            defaultMessage="Preferred delivery date: {date}"
+                                                            id="shipping_options.summary.preferred_delivery_date"
+                                                            values={{
+                                                                date: (
+                                                                    <FormattedDate
+                                                                        value={preferredDate}
+                                                                        year="numeric"
+                                                                        month="long"
+                                                                        day="numeric"
+                                                                    />
+                                                                )
+                                                            }}
+                                                        />
                                                     </Text>
                                                 )}
                                             </Box>

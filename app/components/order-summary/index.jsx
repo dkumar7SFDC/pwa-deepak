@@ -6,7 +6,7 @@
  */
 import React from 'react'
 import PropTypes from 'prop-types'
-import {FormattedMessage, FormattedNumber} from 'react-intl'
+import {FormattedDate, FormattedMessage, FormattedNumber} from 'react-intl'
 import {
     Box,
     Flex,
@@ -21,6 +21,7 @@ import {
     AccordionButton,
     AccordionPanel
 } from '@salesforce/retail-react-app/app/components/shared/ui'
+import {PREFERRED_SHIPPING_DATE_ATTR} from '@salesforce/retail-react-app/app/pages/checkout/partials/preferred-shipping-date'
 import Link from '@salesforce/retail-react-app/app/components/link'
 import {PromoCode, usePromoCode} from '@salesforce/retail-react-app/app/components/promo-code'
 import ItemVariantProvider from '@salesforce/retail-react-app/app/components/item-variant'
@@ -124,6 +125,57 @@ CartItems.propTypes = {
     basket: PropTypes.object
 }
 
+/**
+ * Renders the preferred delivery date(s) selected by the shopper for each
+ * basket shipment. Reads the shipment-level `c_preferredShippingDate` custom
+ * attribute that's persisted via SCAPI on the Shipping checkout step.
+ *
+ * Hidden when no shipment has a preferred date set (e.g. cart pages before
+ * the shopper has reached the Shipping step, or pickup-only baskets).
+ */
+const PreferredDeliveryDates = ({basket}) => {
+    const shipmentsWithDate =
+        basket?.shipments?.filter((shipment) => shipment?.[PREFERRED_SHIPPING_DATE_ATTR]) || []
+
+    if (shipmentsWithDate.length === 0) {
+        return null
+    }
+
+    return (
+        <Box w="full">
+            <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                {shipmentsWithDate.length === 1 ? (
+                    <FormattedMessage
+                        defaultMessage="Preferred delivery date"
+                        id="order_summary.label.preferred_delivery_date"
+                    />
+                ) : (
+                    <FormattedMessage
+                        defaultMessage="Preferred delivery dates"
+                        id="order_summary.label.preferred_delivery_dates"
+                    />
+                )}
+            </Text>
+            <Stack spacing={0.5}>
+                {shipmentsWithDate.map((shipment) => (
+                    <Text key={shipment.shipmentId} fontSize="sm" color="gray.700">
+                        <FormattedDate
+                            value={shipment[PREFERRED_SHIPPING_DATE_ATTR]}
+                            year="numeric"
+                            month="long"
+                            day="numeric"
+                        />
+                    </Text>
+                ))}
+            </Stack>
+        </Box>
+    )
+}
+
+PreferredDeliveryDates.propTypes = {
+    basket: PropTypes.object
+}
+
 const OrderSummary = ({
     basket,
     showPromoCodeForm = false,
@@ -155,6 +207,8 @@ const OrderSummary = ({
                 aria-labelledby="order-summary-heading"
             >
                 {showCartItems && <CartItems basket={basket} />}
+
+                <PreferredDeliveryDates basket={basket} />
 
                 <Stack w="full">
                     <Flex justify="space-between" aria-live="polite" aria-atomic="true">
