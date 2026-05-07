@@ -22,8 +22,17 @@ import {
     Stack,
     Radio,
     RadioGroup,
+    Input,
+    FormControl,
+    FormLabel,
+    FormErrorMessage,
     useTheme
 } from '@salesforce/retail-react-app/app/components/shared/ui'
+
+// Maximum allowed length for the personalised engraving text. This is enforced
+// client-side via `maxLength` on the input *and* a guard in `handleCartItem`
+// (see SCAPI custom attribute `c_engravingText`).
+const MAX_ENGRAVING_LENGTH = 50
 
 // Constants
 const DELIVERY_OPTIONS = {
@@ -183,6 +192,11 @@ const ProductView = forwardRef(
         const theme = useTheme()
         const {confirmingBasket} = useSFPayments()
         const [showOptionsMessage, toggleShowOptionsMessage] = useState(false)
+        // Engraving text is captured per-product on the PDP and forwarded into the
+        // SCAPI add-to-basket payload as the custom attribute `c_engravingText`. It is
+        // gated to standalone single products (not sets / not bundle children). For
+        // product sets/bundles, child products do not surface this input.
+        const [engravingText, setEngravingText] = useState('')
         const {
             showLoading,
             showInventoryMessage,
@@ -213,6 +227,11 @@ const ProductView = forwardRef(
         const canAddToWishlist = !isProductLoading
         const isProductASet = product?.type?.set
         const isProductABundle = product?.type?.bundle
+        // Engraving is only meaningful for standalone single-product PDPs that are
+        // actually "addable to cart" — sets/bundles add multiple line items and don't
+        // map cleanly to one engraving value.
+        const isEngravingTooLong = engravingText.length > MAX_ENGRAVING_LENGTH
+        const showEngravingField = !isProductASet && !isProductPartOfBundle && !!addToCart
         const errorContainerRef = useRef(null)
         const [pickupEnabled, setPickupEnabled] = useState(false)
         const storeName = selectedStore?.name
@@ -397,12 +416,43 @@ const ProductView = forwardRef(
                     await updateCart(variant || product, quantity)
                     return
                 }
+                if (isEngravingTooLong) {
+                    // Defensive: the input is `maxLength`-capped, so we should never get here
+                    // unless the value was set programmatically. Keep the guard so the SCAPI
+                    // call can never be made with an invalid `c_engravingText`.
+                    showToast({
+                        title: intl.formatMessage(
+                            {
+                                defaultMessage:
+                                    'Engraving must be {max} characters or fewer.',
+                                id: 'product_view.error.engraving_too_long'
+                            },
+                            {max: MAX_ENGRAVING_LENGTH}
+                        ),
+                        status: 'error'
+                    })
+                    return
+                }
+
+                // Trim trailing whitespace; treat an empty string as "no engraving" so we
+                // don't send a useless `c_engravingText: ""` to SCAPI.
+                const trimmedEngraving = engravingText.trim()
+                const cartItem = {
+                    product,
+                    variant,
+                    quantity,
+                    ...(trimmedEngraving ? {engravingText: trimmedEngraving} : {})
+                }
+
                 try {
-                    const itemsAdded = await addToCart([{product, variant, quantity}])
+                    const itemsAdded = await addToCart([cartItem])
                     // Open modal only when `addToCart` returns some data
                     // It's possible that the item has been added to cart, but we don't want to open the modal.
                     // See wishlist_primary_action for example.
                     if (itemsAdded) {
+                        // Reset the engraving field after a successful add so the next session
+                        // (or quick re-add of a different variant) starts clean.
+                        if (trimmedEngraving) setEngravingText('')
                         onAddToCartModalOpen({
                             product,
                             itemsAdded,
@@ -429,7 +479,7 @@ const ProductView = forwardRef(
                     <Button
                         key="cart-button"
                         onClick={handleCartItem}
-                        isDisabled={disableButton}
+                        isDisabled={disableButton || isEngravingTooLong}
                         isLoading={isBasketLoading}
                         width="100%"
                         variant="solid"
@@ -796,6 +846,113 @@ const ProductView = forwardRef(
                                         }}
                                         productName={product?.name}
                                     />
+                                </VStack>
+                            )}
+
+                            {/* Engraving (custom personalisation). Forwarded to SCAPI as
+                                `c_engravingText` on the basket product line item via the
+                                `engravingText` field on the addToCart payload. Hidden for
+                                product sets/bundles where it doesn't apply. */}
+                            {showEngravingField && (
+                                <VStack
+                                    align="stretch"
+                                    spacing={2}
+                                    maxWidth={{base: '100%', md: '400px'}}
+                                    data-testid="sf-engraving-field"
+                                >
+                                    <FormControl isInvalid={isEngravingTooLong}>
+                                        <FormLabel
+                                            htmlFor="engraving-text"
+                                            fontWeight="bold"
+                                            mb={1}
+                                        >
+                                            {intl.formatMessage({
+                                                defaultMessage: 'Engraving (optional):',
+                                                id: 'product_view.label.engraving'
+                                            })}
+                                        </FormLabel>
+                                        <Input
+                                            id="engraving-text"
+                                            type="text"
+                                            value={engravingText}
+                                            maxLength={MAX_ENGRAVING_LENGTH}
+                                            placeholder={intl.formatMessage({
+                                                defaultMessage:
+                                                    'Enter engraving text (e.g. initials)',
+                                                id: 'product_view.placeholder.engraving'
+                                            })}
+                                            onChange={(e) =>
+                                                setEngravingText(e.target.value)
+                                            }
+                                            aria-describedby="engraving-helper"
+                                        />
+                                        <Flex
+                                            justify="space-between"
+                                            align="center"
+                                            mt={1}
+                                        >
+                                            <Text
+                                                id="engraving-helper"
+                                                fontSize="xs"
+                                                color="gray.600"
+                                            >
+                                                {intl.formatMessage(
+                                                    {
+                                                        defaultMessage:
+                                                            '{count}/{max} characters',
+                                                        id: 'product_view.helper.engraving_count'
+                                                    },
+                                                    {
+                                                        count: engravingText.length,
+                                                        max: MAX_ENGRAVING_LENGTH
+                                                    }
+                                                )}
+                                            </Text>
+                                            {isEngravingTooLong && (
+                                                <FormErrorMessage mt={0} fontSize="xs">
+                                                    {intl.formatMessage(
+                                                        {
+                                                            defaultMessage:
+                                                                'Engraving must be {max} characters or fewer.',
+                                                            id: 'product_view.error.engraving_too_long'
+                                                        },
+                                                        {max: MAX_ENGRAVING_LENGTH}
+                                                    )}
+                                                </FormErrorMessage>
+                                            )}
+                                        </Flex>
+                                    </FormControl>
+
+                                    {engravingText.trim() && (
+                                        <Box
+                                            data-testid="sf-engraving-preview"
+                                            borderWidth="1px"
+                                            borderColor="gray.200"
+                                            borderRadius="md"
+                                            paddingX={3}
+                                            paddingY={2}
+                                            backgroundColor="gray.50"
+                                        >
+                                            <Text
+                                                fontSize="xs"
+                                                color="gray.600"
+                                                marginBottom={1}
+                                            >
+                                                {intl.formatMessage({
+                                                    defaultMessage: 'Preview',
+                                                    id: 'product_view.label.engraving_preview'
+                                                })}
+                                            </Text>
+                                            <Text
+                                                fontFamily="serif"
+                                                fontStyle="italic"
+                                                fontSize="lg"
+                                                wordBreak="break-word"
+                                            >
+                                                {engravingText}
+                                            </Text>
+                                        </Box>
+                                    )}
                                 </VStack>
                             )}
                             <Box ref={errorContainerRef}>

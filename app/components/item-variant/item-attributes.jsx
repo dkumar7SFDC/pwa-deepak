@@ -122,6 +122,30 @@ const ItemAttributes = ({
                     </Text>
                 ))}
 
+            {/* Engraving / personalisation. The value is read from the SCAPI custom
+                attribute `c_engravingText` on the product line item; when no engraving
+                was set on the PLI the attribute is absent and nothing renders. */}
+            {variant?.c_engravingText ? (
+                <Text
+                    data-testid="sf-cart-item-engraving"
+                    lineHeight={1.3}
+                    color="gray.700"
+                    fontSize="sm"
+                >
+                    <FormattedMessage
+                        defaultMessage="Engraving: {text}"
+                        id="item_attributes.label.engraving"
+                        values={{
+                            text: (
+                                <Text as="span" fontStyle="italic">
+                                    {variant.c_engravingText}
+                                </Text>
+                            )
+                        }}
+                    />
+                </Text>
+            ) : null}
+
             {includeQuantity && (
                 <Text lineHeight={1} color="gray.700" fontSize="sm">
                     <FormattedMessage
