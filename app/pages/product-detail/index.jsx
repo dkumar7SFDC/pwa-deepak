@@ -324,13 +324,21 @@ const ProductDetail = () => {
     const handleAddToCart = async (productSelectionValues = []) => {
         try {
             let productItems = productSelectionValues.map((item) => {
-                const {variant, quantity} = item
+                const {variant, quantity, engravingText} = item
                 // Use variant if present, otherwise use the main product
                 const prod = variant || item.product || product
                 return {
                     productId: prod?.productId || prod?.id, // productId for variant, id for product
                     price: prod?.price,
-                    quantity
+                    quantity,
+                    // Forward the personalisation as a SCAPI custom attribute on the PLI.
+                    // SCAPI takes custom attributes at the top level of the product item
+                    // body using the `c_<name>` convention (no `custom: {}` wrapper —
+                    // that's OCAPI). The custom attribute must be defined on the
+                    // ProductLineItem object type and exposed via SCAPI in BM.
+                    // We omit the field entirely when there's no engraving so we don't
+                    // serialise an empty `c_engravingText` onto the basket.
+                    ...(engravingText ? {c_engravingText: engravingText} : {})
                 }
             })
             // Add inventory IDs for pickup items using the hook helper
