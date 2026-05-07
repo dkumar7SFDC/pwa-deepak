@@ -1,12 +1,14 @@
 {
   "name": "client",
-  "hash": "ee6b3e18a827c3897001",
+  "hash": "c901d13d9f0d7dd354bb",
   "publicPath": "/mobify/bundle/development/",
   "outputPath": "/Users/dkumar7/pwa-kit-starter-project/build",
   "assetsByChunkName": {
     "main": [
       "main.js",
-      "main.js.map"
+      "main.b3a887dc8c5741cc6b7f.hot-update.js",
+      "main.js.map",
+      "main.b3a887dc8c5741cc6b7f.hot-update.js.map"
     ],
     "pages-home": [
       "pages-home.js",
@@ -34,7 +36,9 @@
     ],
     "pages-checkout": [
       "pages-checkout.js",
-      "pages-checkout.js.map"
+      "pages-checkout.b3a887dc8c5741cc6b7f.hot-update.js",
+      "pages-checkout.js.map",
+      "pages-checkout.b3a887dc8c5741cc6b7f.hot-update.js.map"
     ],
     "pages-checkout-one-click": [
       "pages-checkout-one-click.js",
@@ -89,7 +93,7 @@
     {
       "type": "asset",
       "name": "vendor.js",
-      "size": 5985081,
+      "size": 6036811,
       "emitted": false,
       "comparedForEmit": false,
       "cached": true,
@@ -116,7 +120,7 @@
     {
       "type": "asset",
       "name": "main.js",
-      "size": 2348867,
+      "size": 2348931,
       "emitted": false,
       "comparedForEmit": false,
       "cached": true,
@@ -135,6 +139,31 @@
       "filteredRelated": 1,
       "chunks": [
         "main"
+      ],
+      "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
+      "name": "pages-checkout.js",
+      "size": 394071,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "javascriptModule": false,
+        "related": {
+          "sourceMap": "pages-checkout.js.map"
+        }
+      },
+      "chunkNames": [
+        "pages-checkout"
+      ],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "filteredRelated": 1,
+      "chunks": [
+        "pages-checkout"
       ],
       "auxiliaryChunks": []
     },
@@ -160,31 +189,6 @@
       "filteredRelated": 1,
       "chunks": [
         "pages-checkout-one-click"
-      ],
-      "auxiliaryChunks": []
-    },
-    {
-      "type": "asset",
-      "name": "pages-checkout.js",
-      "size": 363184,
-      "emitted": false,
-      "comparedForEmit": false,
-      "cached": true,
-      "info": {
-        "javascriptModule": false,
-        "related": {
-          "sourceMap": "pages-checkout.js.map"
-        }
-      },
-      "chunkNames": [
-        "pages-checkout"
-      ],
-      "chunkIdHints": [],
-      "auxiliaryChunkNames": [],
-      "auxiliaryChunkIdHints": [],
-      "filteredRelated": 1,
-      "chunks": [
-        "pages-checkout"
       ],
       "auxiliaryChunks": []
     },
@@ -475,6 +479,33 @@
       "filteredRelated": 1,
       "chunks": [
         "app_components_item-variant_item-attributes_jsx-app_components_item-variant_item-image_jsx-ap-c1a2e1"
+      ],
+      "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
+      "name": "pages-checkout.b3a887dc8c5741cc6b7f.hot-update.js",
+      "size": 37873,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "hotModuleReplacement": true,
+        "immutable": true,
+        "fullhash": "b3a887dc8c5741cc6b7f",
+        "related": {
+          "sourceMap": "pages-checkout.b3a887dc8c5741cc6b7f.hot-update.js.map"
+        }
+      },
+      "chunkNames": [
+        "pages-checkout"
+      ],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "filteredRelated": 1,
+      "chunks": [
+        "pages-checkout"
       ],
       "auxiliaryChunks": []
     },
@@ -981,6 +1012,33 @@
     },
     {
       "type": "asset",
+      "name": "main.b3a887dc8c5741cc6b7f.hot-update.js",
+      "size": 362,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "hotModuleReplacement": true,
+        "immutable": true,
+        "fullhash": "b3a887dc8c5741cc6b7f",
+        "related": {
+          "sourceMap": "main.b3a887dc8c5741cc6b7f.hot-update.js.map"
+        }
+      },
+      "chunkNames": [
+        "main"
+      ],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "filteredRelated": 1,
+      "chunks": [
+        "main"
+      ],
+      "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
       "name": "_1242.js",
       "size": 272,
       "emitted": false,
@@ -1001,6 +1059,25 @@
         "_1242"
       ],
       "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
+      "name": "main.b3a887dc8c5741cc6b7f.hot-update.json",
+      "size": 45,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "hotModuleReplacement": true,
+        "immutable": true,
+        "fullhash": "b3a887dc8c5741cc6b7f"
+      },
+      "chunkNames": [],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "chunks": [],
+      "auxiliaryChunks": []
     }
   ],
   "namedChunkGroups": {
@@ -1016,11 +1093,14 @@
         },
         {
           "name": "main.js"
+        },
+        {
+          "name": "main.b3a887dc8c5741cc6b7f.hot-update.js"
         }
       ],
       "filteredAssets": 0,
       "assetsSize": null,
-      "filteredAuxiliaryAssets": 2,
+      "filteredAuxiliaryAssets": 3,
       "auxiliaryAssetsSize": null,
       "children": {},
       "childAssets": {}
@@ -1215,11 +1295,14 @@
         },
         {
           "name": "pages-checkout.js"
+        },
+        {
+          "name": "pages-checkout.b3a887dc8c5741cc6b7f.hot-update.js"
         }
       ],
       "filteredAssets": 0,
       "assetsSize": null,
-      "filteredAuxiliaryAssets": 8,
+      "filteredAuxiliaryAssets": 9,
       "auxiliaryAssetsSize": null,
       "children": {},
       "childAssets": {}
@@ -1469,7 +1552,8 @@
     {
       "id": "main",
       "files": [
-        "main.js"
+        "main.js",
+        "main.b3a887dc8c5741cc6b7f.hot-update.js"
       ]
     },
     {
@@ -1571,7 +1655,8 @@
     {
       "id": "pages-checkout",
       "files": [
-        "pages-checkout.js"
+        "pages-checkout.js",
+        "pages-checkout.b3a887dc8c5741cc6b7f.hot-update.js"
       ]
     },
     {
