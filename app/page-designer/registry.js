@@ -36,6 +36,22 @@ export function initializeRegistry() {
     registry.registerImporter('commerce_assets.mainBanner', () =>
         import('./assets/main-banner')
     )
+    // Category Tile — the actual component id used in this project's BM is
+    // `commerce_assets.categoryTile`. We register a few common spellings as
+    // aliases so accidental case differences (or a later rename in BM) won't
+    // silently break rendering.
+    registry.registerImporter('commerce_assets.categoryTile', () =>
+        import('./assets/featured-category-tile')
+    )
+    registry.registerImporter('commerce_assets.categorytile', () =>
+        import('./assets/featured-category-tile')
+    )
+    registry.registerImporter('commerce_assets.featuredcategorytile', () =>
+        import('./assets/featured-category-tile')
+    )
+    registry.registerImporter('commerce_assets.featuredCategoryTile', () =>
+        import('./assets/featured-category-tile')
+    )
 
     // Commerce Layouts - Layout components
     registry.registerImporter('commerce_layouts.mobileGrid1r1c', () =>
@@ -55,5 +71,13 @@ export function initializeRegistry() {
     )
     registry.registerImporter('commerce_layouts.mobileGrid3r2c', () =>
         import('./layouts/mobileGrid3r2c')
+    )
+    // Featured Category Grid — registered under both the lowercase id used in
+    // BM for this project (`featuredcategorygrid`) and the camelCase variant.
+    registry.registerImporter('commerce_layouts.featuredcategorygrid', () =>
+        import('../components/page-designer/category-grid')
+    )
+    registry.registerImporter('commerce_layouts.featuredCategoryGrid', () =>
+        import('../components/page-designer/category-grid')
     )
 }
