@@ -1,18 +1,20 @@
 {
   "name": "client",
-  "hash": "c901d13d9f0d7dd354bb",
+  "hash": "94a4810049cc257653e3",
   "publicPath": "/mobify/bundle/development/",
   "outputPath": "/Users/dkumar7/pwa-kit-starter-project/build",
   "assetsByChunkName": {
     "main": [
       "main.js",
-      "main.b3a887dc8c5741cc6b7f.hot-update.js",
+      "main.8cd9b5f9b1abe1758867.hot-update.js",
       "main.js.map",
-      "main.b3a887dc8c5741cc6b7f.hot-update.js.map"
+      "main.8cd9b5f9b1abe1758867.hot-update.js.map"
     ],
     "pages-home": [
       "pages-home.js",
-      "pages-home.js.map"
+      "pages-home.8cd9b5f9b1abe1758867.hot-update.js",
+      "pages-home.js.map",
+      "pages-home.8cd9b5f9b1abe1758867.hot-update.js.map"
     ],
     "pages-login": [
       "pages-login.js",
@@ -36,9 +38,7 @@
     ],
     "pages-checkout": [
       "pages-checkout.js",
-      "pages-checkout.b3a887dc8c5741cc6b7f.hot-update.js",
-      "pages-checkout.js.map",
-      "pages-checkout.b3a887dc8c5741cc6b7f.hot-update.js.map"
+      "pages-checkout.js.map"
     ],
     "pages-checkout-one-click": [
       "pages-checkout-one-click.js",
@@ -120,7 +120,7 @@
     {
       "type": "asset",
       "name": "main.js",
-      "size": 2348931,
+      "size": 2351917,
       "emitted": false,
       "comparedForEmit": false,
       "cached": true,
@@ -317,6 +317,31 @@
     },
     {
       "type": "asset",
+      "name": "pages-home.js",
+      "size": 79982,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "javascriptModule": false,
+        "related": {
+          "sourceMap": "pages-home.js.map"
+        }
+      },
+      "chunkNames": [
+        "pages-home"
+      ],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "filteredRelated": 1,
+      "chunks": [
+        "pages-home"
+      ],
+      "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
       "name": "app_hooks_use-multiship_js.js",
       "size": 74860,
       "emitted": false,
@@ -341,7 +366,7 @@
     {
       "type": "asset",
       "name": "app_page-designer_assets_index_js-app_page-designer_layouts_index_js.js",
-      "size": 74305,
+      "size": 74650,
       "emitted": false,
       "comparedForEmit": false,
       "cached": true,
@@ -411,31 +436,6 @@
     },
     {
       "type": "asset",
-      "name": "pages-home.js",
-      "size": 63088,
-      "emitted": false,
-      "comparedForEmit": false,
-      "cached": true,
-      "info": {
-        "javascriptModule": false,
-        "related": {
-          "sourceMap": "pages-home.js.map"
-        }
-      },
-      "chunkNames": [
-        "pages-home"
-      ],
-      "chunkIdHints": [],
-      "auxiliaryChunkNames": [],
-      "auxiliaryChunkIdHints": [],
-      "filteredRelated": 1,
-      "chunks": [
-        "pages-home"
-      ],
-      "auxiliaryChunks": []
-    },
-    {
-      "type": "asset",
       "name": "pages-account-wishlist.js",
       "size": 54564,
       "emitted": false,
@@ -479,33 +479,6 @@
       "filteredRelated": 1,
       "chunks": [
         "app_components_item-variant_item-attributes_jsx-app_components_item-variant_item-image_jsx-ap-c1a2e1"
-      ],
-      "auxiliaryChunks": []
-    },
-    {
-      "type": "asset",
-      "name": "pages-checkout.b3a887dc8c5741cc6b7f.hot-update.js",
-      "size": 37873,
-      "emitted": false,
-      "comparedForEmit": false,
-      "cached": true,
-      "info": {
-        "hotModuleReplacement": true,
-        "immutable": true,
-        "fullhash": "b3a887dc8c5741cc6b7f",
-        "related": {
-          "sourceMap": "pages-checkout.b3a887dc8c5741cc6b7f.hot-update.js.map"
-        }
-      },
-      "chunkNames": [
-        "pages-checkout"
-      ],
-      "chunkIdHints": [],
-      "auxiliaryChunkNames": [],
-      "auxiliaryChunkIdHints": [],
-      "filteredRelated": 1,
-      "chunks": [
-        "pages-checkout"
       ],
       "auxiliaryChunks": []
     },
@@ -600,6 +573,56 @@
       "filteredRelated": 1,
       "chunks": [
         "pages-reset-password"
+      ],
+      "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
+      "name": "app_page-designer_assets_featured-category-tile_index_jsx.js",
+      "size": 23478,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "javascriptModule": false,
+        "related": {
+          "sourceMap": "app_page-designer_assets_featured-category-tile_index_jsx.js.map"
+        }
+      },
+      "chunkNames": [],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "filteredRelated": 1,
+      "chunks": [
+        "app_page-designer_assets_featured-category-tile_index_jsx"
+      ],
+      "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
+      "name": "pages-home.8cd9b5f9b1abe1758867.hot-update.js",
+      "size": 23121,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "hotModuleReplacement": true,
+        "immutable": true,
+        "fullhash": "8cd9b5f9b1abe1758867",
+        "related": {
+          "sourceMap": "pages-home.8cd9b5f9b1abe1758867.hot-update.js.map"
+        }
+      },
+      "chunkNames": [
+        "pages-home"
+      ],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "filteredRelated": 1,
+      "chunks": [
+        "pages-home"
       ],
       "auxiliaryChunks": []
     },
@@ -824,6 +847,29 @@
     },
     {
       "type": "asset",
+      "name": "app_components_page-designer_category-grid_index_jsx.js",
+      "size": 5504,
+      "emitted": false,
+      "comparedForEmit": false,
+      "cached": true,
+      "info": {
+        "javascriptModule": false,
+        "related": {
+          "sourceMap": "app_components_page-designer_category-grid_index_jsx.js.map"
+        }
+      },
+      "chunkNames": [],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "filteredRelated": 1,
+      "chunks": [
+        "app_components_page-designer_category-grid_index_jsx"
+      ],
+      "auxiliaryChunks": []
+    },
+    {
+      "type": "asset",
       "name": "app_page-designer_layouts_mobileGrid1r1c_index_jsx.js",
       "size": 5342,
       "emitted": false,
@@ -1012,7 +1058,7 @@
     },
     {
       "type": "asset",
-      "name": "main.b3a887dc8c5741cc6b7f.hot-update.js",
+      "name": "main.8cd9b5f9b1abe1758867.hot-update.js",
       "size": 362,
       "emitted": false,
       "comparedForEmit": false,
@@ -1020,9 +1066,9 @@
       "info": {
         "hotModuleReplacement": true,
         "immutable": true,
-        "fullhash": "b3a887dc8c5741cc6b7f",
+        "fullhash": "8cd9b5f9b1abe1758867",
         "related": {
-          "sourceMap": "main.b3a887dc8c5741cc6b7f.hot-update.js.map"
+          "sourceMap": "main.8cd9b5f9b1abe1758867.hot-update.js.map"
         }
       },
       "chunkNames": [
@@ -1062,15 +1108,15 @@
     },
     {
       "type": "asset",
-      "name": "main.b3a887dc8c5741cc6b7f.hot-update.json",
-      "size": 45,
+      "name": "main.8cd9b5f9b1abe1758867.hot-update.json",
+      "size": 41,
       "emitted": false,
       "comparedForEmit": false,
       "cached": true,
       "info": {
         "hotModuleReplacement": true,
         "immutable": true,
-        "fullhash": "b3a887dc8c5741cc6b7f"
+        "fullhash": "8cd9b5f9b1abe1758867"
       },
       "chunkNames": [],
       "chunkIdHints": [],
@@ -1095,7 +1141,7 @@
           "name": "main.js"
         },
         {
-          "name": "main.b3a887dc8c5741cc6b7f.hot-update.js"
+          "name": "main.8cd9b5f9b1abe1758867.hot-update.js"
         }
       ],
       "filteredAssets": 0,
@@ -1108,20 +1154,27 @@
     "pages-home": {
       "name": "pages-home",
       "chunks": [
+        "app_page-designer_assets_featured-category-tile_index_jsx",
         "app_page-designer_assets_index_js-app_page-designer_layouts_index_js",
         "pages-home"
       ],
       "assets": [
         {
+          "name": "app_page-designer_assets_featured-category-tile_index_jsx.js"
+        },
+        {
           "name": "app_page-designer_assets_index_js-app_page-designer_layouts_index_js.js"
         },
         {
           "name": "pages-home.js"
+        },
+        {
+          "name": "pages-home.8cd9b5f9b1abe1758867.hot-update.js"
         }
       ],
       "filteredAssets": 0,
       "assetsSize": null,
-      "filteredAuxiliaryAssets": 2,
+      "filteredAuxiliaryAssets": 4,
       "auxiliaryAssetsSize": null,
       "children": {},
       "childAssets": {}
@@ -1295,14 +1348,11 @@
         },
         {
           "name": "pages-checkout.js"
-        },
-        {
-          "name": "pages-checkout.b3a887dc8c5741cc6b7f.hot-update.js"
         }
       ],
       "filteredAssets": 0,
       "assetsSize": null,
-      "filteredAuxiliaryAssets": 9,
+      "filteredAuxiliaryAssets": 8,
       "auxiliaryAssetsSize": null,
       "children": {},
       "childAssets": {}
@@ -1431,10 +1481,14 @@
     "pages-product-list": {
       "name": "pages-product-list",
       "chunks": [
+        "app_page-designer_assets_featured-category-tile_index_jsx",
         "app_page-designer_assets_index_js-app_page-designer_layouts_index_js",
         "pages-product-list"
       ],
       "assets": [
+        {
+          "name": "app_page-designer_assets_featured-category-tile_index_jsx.js"
+        },
         {
           "name": "app_page-designer_assets_index_js-app_page-designer_layouts_index_js.js"
         },
@@ -1444,7 +1498,7 @@
       ],
       "filteredAssets": 0,
       "assetsSize": null,
-      "filteredAuxiliaryAssets": 2,
+      "filteredAuxiliaryAssets": 3,
       "auxiliaryAssetsSize": null,
       "children": {},
       "childAssets": {}
@@ -1553,7 +1607,7 @@
       "id": "main",
       "files": [
         "main.js",
-        "main.b3a887dc8c5741cc6b7f.hot-update.js"
+        "main.8cd9b5f9b1abe1758867.hot-update.js"
       ]
     },
     {
@@ -1578,6 +1632,12 @@
       "id": "app_page-designer_assets_main-banner_index_jsx",
       "files": [
         "app_page-designer_assets_main-banner_index_jsx.js"
+      ]
+    },
+    {
+      "id": "app_page-designer_assets_featured-category-tile_index_jsx",
+      "files": [
+        "app_page-designer_assets_featured-category-tile_index_jsx.js"
       ]
     },
     {
@@ -1617,9 +1677,16 @@
       ]
     },
     {
+      "id": "app_components_page-designer_category-grid_index_jsx",
+      "files": [
+        "app_components_page-designer_category-grid_index_jsx.js"
+      ]
+    },
+    {
       "id": "pages-home",
       "files": [
-        "pages-home.js"
+        "pages-home.js",
+        "pages-home.8cd9b5f9b1abe1758867.hot-update.js"
       ]
     },
     {
@@ -1655,8 +1722,7 @@
     {
       "id": "pages-checkout",
       "files": [
-        "pages-checkout.js",
-        "pages-checkout.b3a887dc8c5741cc6b7f.hot-update.js"
+        "pages-checkout.js"
       ]
     },
     {

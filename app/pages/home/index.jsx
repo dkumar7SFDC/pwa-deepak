@@ -184,6 +184,28 @@ const Home = () => {
                 </Section>
             </Island>
 
+            <Island hydrateOn={'visible'}>
+                <Section
+                    padding={4}
+                    paddingTop={16}
+                    title={intl.formatMessage({
+                        defaultMessage: 'Shop by Category',
+                        id: 'home.heading.shop_by_category'
+                    })}
+                    subtitle={intl.formatMessage({
+                        defaultMessage: 'Curated picks across our most-loved categories.',
+                        id: 'home.description.shop_by_category'
+                    })}
+                >
+                    <Stack pt={8} spacing={16}>
+                        <PageDesignerMainRegion
+                            pageId="featuredcategorygrid"
+                            debug={process.env.NODE_ENV !== 'production'}
+                        />
+                    </Stack>
+                </Section>
+            </Island>
+
             {productSearchResult && (
                 <Island hydrateOn={'visible'}>
                     <Section
