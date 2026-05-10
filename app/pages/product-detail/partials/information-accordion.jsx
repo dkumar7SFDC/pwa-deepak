@@ -18,6 +18,8 @@ import {
 } from '@salesforce/retail-react-app/app/components/shared/ui'
 import {useIntl} from 'react-intl'
 
+import IngredientsAccordionItem from '@salesforce/retail-react-app/app/pages/product-detail/partials/ingredients-accordion-item'
+
 const InformationAccordion = ({product}) => {
     const {formatMessage} = useIntl()
 
@@ -108,6 +110,17 @@ const InformationAccordion = ({product}) => {
                         })}
                     </AccordionPanel>
                 </AccordionItem>
+
+                {/* Ingredients — renders only when the product has a non-empty
+                    `customAttributes.ingredients` (or `c_ingredients`) value.
+                    `debug` (development only) prints a single console line
+                    explaining why the panel is hidden when the data is empty
+                    or unreachable, so merchants can troubleshoot the SCAPI
+                    payload without changing code. */}
+                <IngredientsAccordionItem
+                    product={product}
+                    debug={process.env.NODE_ENV !== 'production'}
+                />
             </Accordion>
             <Box display={['none', 'none', 'none', 'block']} flex={4}></Box>
         </Stack>
